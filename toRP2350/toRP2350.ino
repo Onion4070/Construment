@@ -216,12 +216,9 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
   Serial.printf("freq = %02x, power = %02x\r\n", low_freq, low_power);
 
   if (report[3] & 0x01) rumble(low_freq, low_power); // Y
-  else rumble(0x40, 0x40);
-  if (report[3] & 0x02) rumble(0x70, 0x90); // X
-  else rumble(0x40, 0x40);
-  if (report[3] & 0x04) rumble(0x40, 0x60); // B
-  else rumble(0x40, 0x40);
-  if (report[3] & 0x08) rumble(0x20, 0x60); // A
+  else if (report[3] & 0x02) rumble(0x70, 0x7f); // X
+  else if (report[3] & 0x04) rumble(0x5c, 0x55); // B
+  else if (report[3] & 0x08) rumble(0x65, 0x60); // A
   else rumble(0x40, 0x40);
 
   // 初期化シーケンスを進める
