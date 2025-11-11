@@ -67,6 +67,9 @@ InitState init_state = InitState::HANDSHAKE;
 uint8_t seq_counter = 0;
 uint8_t procon_addr = 0, procon_instance = 0;
 bool is_procon = false;
+// 接続監視用
+unsigned long last_data_time = 0;
+const unsigned long CONNECTION_TIMEOUT = 3000UL; // ms
 
 struct OutputReport {
   uint8_t command;
@@ -104,6 +107,24 @@ static bool send_short_report(const char* name, uint8_t seq_value) {
     Serial.printf("%s attempt=2 -> %d\r\n", name, ok);
   }
   return ok;
+}
+
+// エラー遷移を一箇所にまとめる
+static void set_controller_error_state(const char* reason) {
+  is_procon = false;
+  procon_addr = 0;
+  procon_instance = 0;
+  setLEDColor(15, 0, 0);
+  Serial.print("ERROR: ");
+  Serial.println(reason);
+}
+
+// タイムアウトチェック
+static void check_connection_timeout(void) {
+  if (!is_procon) return;
+  if (millis() - last_data_time > CONNECTION_TIMEOUT) {
+    set_controller_error_state("Data Timeout");
+  }
 }
 
 // 次の初期化ステップを進める
@@ -202,6 +223,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance,
       procon_instance = instance;
       is_procon = true;
       init_state = InitState::HANDSHAKE;
+      last_data_time = millis();
       // 接続中を示す黄色に変更
       setLEDColor(15, 15, 0);
       advance_init();  // 初期化開始
@@ -274,6 +296,11 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
 
   else if (report[3] & 0x40) rumble_high(high_freq, high_power);
   else rumble_low(0x40, 0x40);
+
+  // 受信があったらタイムスタンプのみ更新する。
+  if (is_procon && dev_addr == procon_addr) {
+    last_data_time = millis();
+  }
 
   // 初期化シーケンスを進める
   if (is_procon && init_state != InitState::DONE) {
@@ -370,4 +397,6 @@ void setup1() {
 // これ以外の処理は走らせない!!! 接続が不安定になる原因となり得る!!!
 void loop1() {
   USBHost.task();
+  // データ受信タイムアウトのチェック
+  check_connection_timeout();
 }
