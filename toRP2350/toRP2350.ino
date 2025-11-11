@@ -15,6 +15,11 @@ Adafruit_USBH_Host USBHost;
 #define LED_COUNT 1
 Adafruit_NeoPixel pixels(LED_COUNT, DIN_PIN, NEO_RGB + NEO_KHZ800);
 
+void setLEDColor(const uint8_t& r, const uint8_t& g, const uint8_t& b) {
+  pixels.setPixelColor(0, pixels.Color(r, g, b));
+  pixels.show();
+}
+
 // vid/pid
 #define VID_NINTENDO   0x057e
 #define PID_SWITCH_PRO 0x2009
@@ -315,13 +320,11 @@ void setup1() {
   // UARTでシリアル通信開始
   Serial1.begin(115200);
   pixels.begin();
-
-  // 青色LED 
-  pixels.setPixelColor(0, pixels.Color(0, 0, 10));
+  // 青色LED
+  setLEDColor(0, 0, 15);
 
   // 電源等の安定待ち (これがないとProコンがコネクションを確立できない)
   delay(500);
-  pixels.show();
   init_usb_host();
 
   // ハードウェアタイマー初期化
