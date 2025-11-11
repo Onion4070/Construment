@@ -18,7 +18,7 @@ Switch Pro Controller を RP2350-USB-A で USB ホスト接続し、ボタン入
 **重要**: Pro Controller は RP2350-USB-A の電源投入**前**に接続してください。
 
 ## Wiring
-基本構成: Pro Controller - RP2350-USB-A (マイコン/ホスト) - PC (オプション)
+基本構成: Pro Controller - RP2350-USB-A - PC (任意)
 
 ## Libraries
 - Adafruit TinyUSB  - USB Host 機能
@@ -27,4 +27,15 @@ Switch Pro Controller を RP2350-USB-A で USB ホスト接続し、ボタン入
 ## Configuration
 - `HOST_PIN_DP` = 12  (PIO USB D+)
 - `DIN_PIN` = 16      (NeoPixel DIN)
-- シリアル: `Serial1`, 115200
+- シリアル: `Serial`, 115200
+
+## LED ステータス
+RP2350ボードに搭載された内蔵NeoPixelは、動作状態を色でわかりやすく示します。
+
+| LED色 | 状態 | 説明 | 推奨アクション |
+|------|------|------|---------------|
+| 🔵 青色 | 待機中 | Pro Controllerの接続待ち。USBデバイスが接続されるまでこの状態になります。 | Pro Controllerがボードに正しく接続されているか確認。電源投入前に接続する運用を推奨。 |
+| 🟡 黄色 | 接続中 | Pro Controller が検出され、初期化シーケンスを実行中。 | 初期化が長時間続く場合はケーブル・電源を確認し、再接続を試す。 |
+| 🟢 緑色 | 接続完了 / 正常動作 | 初期化完了し、コントローラ入力が正常に処理されている状態。 | 正常。問題がなければそのまま使用。 |
+| 🔴 赤色 | 切断・エラー | 接続エラーやタイムアウトが発生した状態。 | ケーブル、電源、接続タイミング（Pro Controllerは電源投入前に接続）を確認し、必要なら再起動。シリアルログを確認して原因を特定。 |
+
