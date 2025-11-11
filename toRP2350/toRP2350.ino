@@ -81,8 +81,29 @@ struct OutputReport {
 void send_report(uint8_t size) {
   out_report.sequence_counter = seq_counter++ & 0x0F;
   if (!tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, size)) {
-    Serial1.printf("send_report failed. error_code=%d\r\n", init_state);
+    Serial.printf("send_report failed. state=%d\r\n", (int)init_state);
   }
+}
+
+// 短い（2バイト）レポート送信用ヘルパ。ログを統一し、
+// 最小限のプリウェイトと 1 回の再試行を行う。
+static bool send_short_report(const char* name, uint8_t seq_value) {
+  out_report.command = SwitchPro::CMD::HID;
+  out_report.sequence_counter = seq_value;
+  const uint8_t* b = (const uint8_t*)&out_report;
+  Serial.printf("%s: addr=%d inst=%d size=2 data=%02X %02X\r\n", name, procon_addr, procon_instance, b[0], b[1]);
+  // 少し待ってから送信
+  delay(50);
+  bool ok = tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 2);
+  Serial.printf("%s attempt=1 -> %d\r\n", name, ok);
+  if (!ok) {
+    // 状態を前進させて再試行を一度だけ行う
+    USBHost.task();
+    delay(20);
+    ok = tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 2);
+    Serial.printf("%s attempt=2 -> %d\r\n", name, ok);
+  }
+  return ok;
 }
 
 // 次の初期化ステップを進める
@@ -97,8 +118,10 @@ void advance_init() {
       out_report.command = SwitchPro::CMD::HID;
       out_report.sequence_counter = SwitchPro::CMD::HANDSHAKE;
 
-      if (tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, report_size)) {
+      // 2バイトの簡易レポートはヘルパで送る（ログを統一）
+      if (send_short_report("send(HANDSHAKE)", SwitchPro::CMD::HANDSHAKE)) {
         init_state = InitState::DISABLE_TIMEOUT;
+        Serial.println("advance_init(): -> DISABLE_TIMEOUT");
       }
       break;
 
@@ -108,8 +131,10 @@ void advance_init() {
       out_report.command = SwitchPro::CMD::HID;
       out_report.sequence_counter = SwitchPro::CMD::DISABLE_TIMEOUT;
 
-      if (tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, report_size)) {
+      // こちらも短いレポートなのでヘルパで送信
+      if (send_short_report("send(DISABLE_TIMEOUT)", SwitchPro::CMD::DISABLE_TIMEOUT)) {
         init_state = InitState::LED;
+        Serial.println("advance_init(): -> LED");
       }
       break;
 
@@ -144,6 +169,8 @@ void advance_init() {
       send_report(report_size);
       // init_state = InitState::IMU;
       init_state = InitState::DONE;
+      // 初期化完了: 緑色に変更
+      setLEDColor(0, 15, 0);
       break;
 
     case InitState::IMU:
@@ -167,14 +194,16 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance,
                       uint8_t const* desc_report, uint16_t desc_len) {
   uint16_t vid, pid;
   if (tuh_vid_pid_get(dev_addr, &vid, &pid)) {
-    Serial1.printf("VID:%04X PID:%04X\r\n", vid, pid);
+    Serial.printf("VID:%04X PID:%04X\r\n", vid, pid);
 
     if (vid == VID_NINTENDO && pid == PID_SWITCH_PRO) {
-      Serial1.println("Switch Pro Controller detected!");
+      Serial.println("Switch Pro Controller detected!");
       procon_addr = dev_addr;
       procon_instance = instance;
       is_procon = true;
       init_state = InitState::HANDSHAKE;
+      // 接続中を示す黄色に変更
+      setLEDColor(15, 15, 0);
       advance_init();  // 初期化開始
     }
   }
@@ -221,11 +250,11 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
                                 uint8_t const* report, uint16_t len) {
   if (len == 0) return;
 
-  Serial.print("HID Report: ");
-  for (uint16_t i = 0; i < len; i++) {
-    Serial.printf("%02X ", report[i]);
-  }
-  Serial.println();
+  // Serial.print("HID Report: ");
+  // for (uint16_t i = 0; i < len; i++) {
+  //   Serial.printf("%02X ", report[i]);
+  // }
+  // Serial.println();
   if (report[5] & 0x04) low_freq++,  high_freq++; // DPAD Right, increment freq
   if (report[5] & 0x08) low_freq--,  high_freq--; // DPAD left,  decrement freq
   if (report[5] & 0x02) low_power++, high_power++; // DPAD up,    increment power
@@ -256,14 +285,16 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
-  Serial1.printf("HID unmounted: addr=%d instance=%d\n", dev_addr, instance);
+  Serial.printf("HID unmounted: addr=%d instance=%d\n", dev_addr, instance);
 
   // 切断されたデバイスが、現在接続されているProコントローラーか確認
   if (dev_addr == procon_addr && instance == procon_instance) {
-    Serial1.println("Pro Controller disconnected. Resetting state.");
+    Serial.println("Pro Controller disconnected. Resetting state.");
     is_procon = false;
     procon_addr = 0;
     procon_instance = 0;
+    // 切断時はエラー/切断表示として赤色にする
+    setLEDColor(15, 0, 0);
     init_state = InitState::HANDSHAKE; // 初期化状態を最初に戻す
     seq_counter = 0;                   // シーケンスカウンターもリセット
   }
@@ -313,12 +344,12 @@ void init_usb_host() {
   pio_cfg.pin_dp = HOST_PIN_DP;
   USBHost.configure_pio_usb(1, &pio_cfg);
   USBHost.begin(1);
-  Serial1.println("USB host init done");
+  Serial.println("USB host init done");
 }
 
 void setup1() {
   // UARTでシリアル通信開始
-  Serial1.begin(115200);
+  Serial.begin(115200);
   pixels.begin();
   // 青色LED
   setLEDColor(0, 0, 15);
