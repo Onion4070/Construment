@@ -15,6 +15,10 @@ Adafruit_USBH_Host USBHost;
 #define LED_COUNT 1
 Adafruit_NeoPixel pixels(LED_COUNT, DIN_PIN, NEO_RGB + NEO_KHZ800);
 
+// vid/pid
+#define VID_NINTENDO   0x057e
+#define PID_SWITCH_PRO 0x2009
+
 // ====== Switch Pro Controller Init State Machine ======
 
 namespace SwitchPro {
