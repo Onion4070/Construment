@@ -176,7 +176,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance,
   tuh_hid_receive_report(dev_addr, instance); // 最初の受信開始
 }
 
-void rumble(int freq, int power) {
+void rumble_low(int freq, int power) {
   memset(&out_report, 0, sizeof(out_report));
   out_report.command = 0x10;  // Rumble only
   out_report.sequence_counter = seq_counter++ & 0x0F;
@@ -193,33 +193,53 @@ void rumble(int freq, int power) {
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
 }
 
+void rumble_high(int freq, int power) {
+  memset(&out_report, 0, sizeof(out_report));
+  out_report.command = 0x10;  // Rumble only
+  out_report.sequence_counter = seq_counter++ & 0x0F;
+
+  out_report.rumble_l[0] = 0x00;
+  out_report.rumble_l[1] = 0x01;
+  out_report.rumble_l[2] = 0x40;
+  out_report.rumble_l[3] = 0x40;
+  out_report.rumble_r[0] = freq;
+  out_report.rumble_r[1] = power;
+  out_report.rumble_r[2] = 0x40;
+  out_report.rumble_r[3] = 0x40;
+
+  tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
+}
+
 int low_freq = 0x60, low_power = 0x60;
+int high_freq = 0x60, high_power = 0x60;
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
                                 uint8_t const* report, uint16_t len) {
   if (len == 0) return;
 
-  // Serial.print("HID Report: ");
-  // for (uint16_t i = 0; i < len; i++) {
-  //   Serial.printf("%02X ", report[i]);
-  // }
-  // Serial.println();
-  if (report[5] & 0x04) low_freq++; // DPAD Right, increment freq
-  if (report[5] & 0x08) low_freq--; // DPAD left,  decrement freq
-  if (report[5] & 0x02) low_power++; // DPAD up,    increment power
-  if (report[5] & 0x01) low_power--; // DPAD down,  decrement power
+  Serial.print("HID Report: ");
+  for (uint16_t i = 0; i < len; i++) {
+    Serial.printf("%02X ", report[i]);
+  }
+  Serial.println();
+  if (report[5] & 0x04) low_freq++,  high_freq++; // DPAD Right, increment freq
+  if (report[5] & 0x08) low_freq--,  high_freq--; // DPAD left,  decrement freq
+  if (report[5] & 0x02) low_power++, high_power++; // DPAD up,    increment power
+  if (report[5] & 0x01) low_power--, high_power--; // DPAD down,  decrement power
 
   if (low_freq < 0) low_freq = 0x00;
   if (low_freq >= 0x80) low_freq = 0x7f;
   if (low_power < 0x40) low_power = 0x40;
   if (low_power >= 0x80) low_power = 0x7f;
 
-  Serial.printf("freq = %02x, power = %02x\r\n", low_freq, low_power);
+  Serial.printf("low_freq = %02x, low_power = %02x, high_freq = %02x, high_power = %02x\r\n", low_freq, low_power, high_freq, high_power);
 
-  if (report[3] & 0x01) rumble(low_freq, low_power); // Y
-  else if (report[3] & 0x02) rumble(0x70, 0x7f); // X
-  else if (report[3] & 0x04) rumble(0x5c, 0x55); // B
-  else if (report[3] & 0x08) rumble(0x65, 0x60); // A
-  else rumble(0x40, 0x40);
+  if (report[3] & 0x01) rumble_low(low_freq, low_power); // Y
+  else if (report[3] & 0x02) rumble_low(0x70, 0x7f); // X
+  else if (report[3] & 0x04) rumble_low(0x5c, 0x55); // B
+  else if (report[3] & 0x08) rumble_low(0x65, 0x60); // A
+
+  else if (report[3] & 0x40) rumble_high(high_freq, high_power);
+  else rumble_low(0x40, 0x40);
 
   // 初期化シーケンスを進める
   if (is_procon && init_state != InitState::DONE) {
