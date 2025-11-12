@@ -6,7 +6,6 @@
 #include "tusb.h"
 
 #define HOST_PIN_DP 12  // PIO USB D+ ピン
-
 Adafruit_USBH_Host USBHost;
 
 // NeoPixel (デバッグ用LED)
@@ -44,12 +43,31 @@ namespace SwitchPro {
   }
 
   namespace Buttons0 {
-    static constexpr uint8_t Y = 0x01;
-    static constexpr uint8_t X = 0x02;
-    static constexpr uint8_t B = 0x04;
-    static constexpr uint8_t A = 0x08;
-    static constexpr uint8_t R = 0x40;
+    // report[3]
+    static constexpr uint8_t Y  = 0x01;
+    static constexpr uint8_t X  = 0x02;
+    static constexpr uint8_t B  = 0x04;
+    static constexpr uint8_t A  = 0x08;
+    static constexpr uint8_t R  = 0x40;
     static constexpr uint8_t ZR = 0x80;
+  }
+  namespace Buttons1 {
+    // report[4]
+    static constexpr uint8_t MINUS   = 0x01;
+    static constexpr uint8_t PLUS    = 0x02;
+    static constexpr uint8_t R3      = 0x04;
+    static constexpr uint8_t L3      = 0x08;
+    static constexpr uint8_t HOME    = 0x10;
+    static constexpr uint8_t CAPTURE = 0x20;
+  }
+  namespace Buttons2 {
+    // report[5]
+    static constexpr uint8_t DPAD_DOWN  = 0x01;
+    static constexpr uint8_t DPAD_UP    = 0x02;
+    static constexpr uint8_t DPAD_RIGHT = 0x04;
+    static constexpr uint8_t DPAD_LEFT  = 0x08;
+    static constexpr uint8_t L   = 0x40;
+    static constexpr uint8_t ZL  = 0x80;
   }
 }
 
@@ -232,25 +250,24 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance,
   tuh_hid_receive_report(dev_addr, instance); // 最初の受信開始
 }
 
-void rumble_low(int freq, int power) {
+void rumble(int frequency, int power) {
   memset(&out_report, 0, sizeof(out_report));
   out_report.command = 0x10;  // Rumble only
   out_report.sequence_counter = seq_counter++ & 0x0F;
 
   out_report.rumble_l[0] = 0x00;
   out_report.rumble_l[1] = 0x01;
-  out_report.rumble_l[2] = freq;
+  out_report.rumble_l[2] = frequency;
   out_report.rumble_l[3] = power;
   out_report.rumble_r[0] = 0x00;
   out_report.rumble_r[1] = 0x01;
-  out_report.rumble_r[2] = freq;
+  out_report.rumble_r[2] = frequency;
   out_report.rumble_r[3] = power;
 
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
 }
 
-int low_freq = 0x60, low_power = 0x60;
-int high_freq = 0x60, high_power = 0x60;
+int freq = 0x60, pow = 0x60;
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
                                 uint8_t const* report, uint16_t len) {
   if (len == 0) return;
@@ -260,23 +277,23 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
   //   Serial.printf("%02X ", report[i]);
   // }
   // Serial.println();
-  if (report[5] & 0x04) low_freq++,  high_freq++; // DPAD Right, increment freq
-  if (report[5] & 0x08) low_freq--,  high_freq--; // DPAD left,  decrement freq
-  if (report[5] & 0x02) low_power++, high_power++; // DPAD up,    increment power
-  if (report[5] & 0x01) low_power--, high_power--; // DPAD down,  decrement power
+  if (report[5] & SwitchPro::Buttons2::DPAD_RIGHT) freq++;
+  if (report[5] & SwitchPro::Buttons2::DPAD_LEFT)  freq--;
+  if (report[5] & SwitchPro::Buttons2::DPAD_UP)    pow++;
+  if (report[5] & SwitchPro::Buttons2::DPAD_DOWN)  pow--;
 
-  if (low_freq < 0) low_freq = 0x00;
-  if (low_freq >= 0x80) low_freq = 0x7f;
-  if (low_power < 0x40) low_power = 0x40;
-  if (low_power >= 0x80) low_power = 0x7f;
+  if (freq < 0) freq      = 0x00;
+  if (freq >= 0x80) freq  = 0x7f;
+  if (pow < 0x40) pow     = 0x40;
+  if (pow >= 0x80) pow    = 0x7f;
 
-  Serial.printf("low_freq = %02x, low_power = %02x, high_freq = %02x, high_power = %02x\r\n", low_freq, low_power, high_freq, high_power);
+  Serial.printf("freq = %02x, pow = %02x\r\n", freq, pow);
 
-  if (report[3] & 0x01) rumble_low(low_freq, low_power); // Y
-  else if (report[3] & 0x02) rumble_low(0x70, 0x7f); // X
-  else if (report[3] & 0x04) rumble_low(0x5c, 0x7f); // B
-  else if (report[3] & 0x08) rumble_low(0x65, 0x7f); // A
-  else rumble_low(0x40, 0x40);
+  if (report[3] & SwitchPro::Buttons0::Y)       rumble(freq, pow);
+  else if (report[3] & SwitchPro::Buttons0::X)  rumble(0x70, 0x7f);
+  else if (report[3] & SwitchPro::Buttons0::B)  rumble(0x5c, 0x7f);
+  else if (report[3] & SwitchPro::Buttons0::A)  rumble(0x65, 0x7f);
+  else rumble(0x40, 0x40);
 
   // 受信があったらタイムスタンプのみ更新する。
   if (is_procon && dev_addr == procon_addr) {
