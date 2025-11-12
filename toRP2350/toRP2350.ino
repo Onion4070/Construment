@@ -14,7 +14,7 @@ Adafruit_USBH_Host USBHost;
 #define LED_COUNT 1
 Adafruit_NeoPixel pixels(LED_COUNT, DIN_PIN, NEO_RGB + NEO_KHZ800);
 
-void setLEDColor(const uint8_t& r, const uint8_t& g, const uint8_t& b) {
+void setLEDColor(uint8_t r, uint8_t g, uint8_t b) {
   pixels.setPixelColor(0, pixels.Color(r, g, b));
   pixels.show();
 }
@@ -106,8 +106,8 @@ void send_report(uint8_t size) {
   }
 }
 
-// 短い（2バイト）レポート送信用ヘルパ。ログを統一し、
-// 最小限のプリウェイトと 1 回の再試行を行う。
+// 短い（2バイト）レポート送信用ヘルパ。
+// ログを統一し、最小限のプリウェイトと 1 回の再試行を行う。
 static bool send_short_report(const char* name, uint8_t seq_value) {
   out_report.command = SwitchPro::CMD::HID;
   out_report.sequence_counter = seq_value;
