@@ -250,7 +250,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance,
   tuh_hid_receive_report(dev_addr, instance); // 最初の受信開始
 }
 
-void rumble(int frequency, int power) {
+void rumble(int frequency, int amplitude) {
   memset(&out_report, 0, sizeof(out_report));
   out_report.command = 0x10;  // Rumble only
   out_report.sequence_counter = seq_counter++ & 0x0F;
@@ -258,16 +258,16 @@ void rumble(int frequency, int power) {
   out_report.rumble_l[0] = 0x00;
   out_report.rumble_l[1] = 0x01;
   out_report.rumble_l[2] = frequency;
-  out_report.rumble_l[3] = power;
+  out_report.rumble_l[3] = amplitude;
   out_report.rumble_r[0] = 0x00;
   out_report.rumble_r[1] = 0x01;
   out_report.rumble_r[2] = frequency;
-  out_report.rumble_r[3] = power;
+  out_report.rumble_r[3] = amplitude;
 
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
 }
 
-int freq = 0x60, pow = 0x60;
+int freq = 0x60, amp = 0x60;
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
                                 uint8_t const* report, uint16_t len) {
   if (len == 0) return;
@@ -279,17 +279,17 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
   // Serial.println();
   if (report[5] & SwitchPro::Buttons2::DPAD_RIGHT) freq++;
   if (report[5] & SwitchPro::Buttons2::DPAD_LEFT)  freq--;
-  if (report[5] & SwitchPro::Buttons2::DPAD_UP)    pow++;
-  if (report[5] & SwitchPro::Buttons2::DPAD_DOWN)  pow--;
+  if (report[5] & SwitchPro::Buttons2::DPAD_UP)    amp++;
+  if (report[5] & SwitchPro::Buttons2::DPAD_DOWN)  amp--;
 
   if (freq < 0) freq      = 0x00;
   if (freq >= 0x80) freq  = 0x7f;
-  if (pow < 0x40) pow     = 0x40;
-  if (pow >= 0x80) pow    = 0x7f;
+  if (amp < 0x40) amp     = 0x40;
+  if (amp >= 0x80) amp    = 0x7f;
 
-  Serial.printf("freq = %02x, pow = %02x\r\n", freq, pow);
+  Serial.printf("freq = %02x, amp = %02x\r\n", freq, amp);
 
-  if (report[3] & SwitchPro::Buttons0::Y)       rumble(freq, pow);
+  if (report[3] & SwitchPro::Buttons0::Y)       rumble(freq, amp);
   else if (report[3] & SwitchPro::Buttons0::X)  rumble(0x70, 0x7f);
   else if (report[3] & SwitchPro::Buttons0::B)  rumble(0x5c, 0x7f);
   else if (report[3] & SwitchPro::Buttons0::A)  rumble(0x65, 0x7f);
