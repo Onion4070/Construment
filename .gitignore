@@ -32,6 +32,7 @@
 *.app
 /viewer/.vs
 /viewer/viewer
-viewer/x64/Debug/viewer.pdb
+/viewer/x64
+# viewer/x64/Debug/viewer.pdb
 viewer/viewer.vcxproj.user
 /viewer/enc_temp_folder

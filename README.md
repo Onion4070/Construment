@@ -39,3 +39,24 @@ RP2350ボードに搭載された内蔵NeoPixelは、動作状態を色でわか
 | 🟢 緑色 | 接続完了 / 正常動作 | 初期化完了し、コントローラ入力が正常に処理されている状態。 | 正常。問題がなければそのまま使用。 |
 | 🔴 赤色 | 切断・エラー | 接続エラーやタイムアウトが発生した状態。 | ケーブル、電源、接続タイミング（Pro Controllerは電源投入前に接続）を確認し、必要なら再起動。シリアルログを確認して原因を特定。 |
 
+
+## Viewer (デスクトップアプリ) のビルド方法（Windows）
+このリポジトリの `Construment\viewer` は Windows 向けのデスクトップアプリ（wxWidgets 使用）です。以下の手順でビルドできます。
+
+### 前提条件
+- Visual Studio 2022（C++ ワークロード）をインストールしていること
+- wxWidgets がインストール済みで、MSVC 向けにビルドされていること（例: `C:\wxWidgets-3.3.1`）。`lib\vc_x64_lib` に `.lib` が存在することを確認してください。
+
+### 手順
+1. `Construment\viewer` フォルダへ移動します:
+```powershell
+cd .\viewer\
+```
+2. `build.bat` を実行します:
+```powershell
+.\build.bat
+```
+3. `x64\Release\viewer.exe`を実行してアプリを起動します。
+```powershell
+.\x64\Release\viewer.exe
+```
