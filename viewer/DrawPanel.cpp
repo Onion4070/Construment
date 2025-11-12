@@ -61,4 +61,10 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 
 	gdc.DrawBitmap(svgBitmapTreble, 50, 20, true); // ト音記号
 	gdc.DrawBitmap(svgBitmapBass, 50, 350, true); // ヘ音記号
+
+	// テキスト描画
+	wxFont font(75, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
+	gdc.SetFont(font);
+	wxString info = wxString::Format("Vol. %d", GetSize().GetWidth()); // 仮
+	gdc.DrawText(info, GetSize().GetHeight()/2, 550); // テキスト描画
 }

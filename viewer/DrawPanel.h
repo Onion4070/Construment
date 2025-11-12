@@ -12,7 +12,10 @@ private:
 	// 描画イベントハンドラ
 	void OnPaint(wxPaintEvent& event);
 	void ClearBackground(wxGCDC& gdc);
-	void DrawScoreLine(wxGCDC& gdc);
+	void DrawScoreLine(wxGCDC& gdc, int width, int offset);
+
+	wxBitmap svgBitmapTreble; // SVG画像を保持するビットマップ
+	wxBitmap svgBitmapBass;
 
 	// イベントテーブル宣言
 	wxDECLARE_EVENT_TABLE();
