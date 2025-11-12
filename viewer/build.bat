@@ -2,10 +2,7 @@
 echo viewer Build Script
 
 REM wxWidgetsパスの設定
-set "WXWIDGETS_ROOT=C:\wxWidgets-3.3.1"
-if not exist "%WXWIDGETS_ROOT%" (
-    set "WXWIDGETS_ROOT=C:\wxWidgets"
-)
+set "WXWIDGETS_ROOT=C:\wxWidgets"
 
 if not exist "%WXWIDGETS_ROOT%" (
     echo wxWidgets not found. Please install wxWidgets.
