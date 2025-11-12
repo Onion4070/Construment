@@ -243,25 +243,8 @@ void rumble_low(int freq, int power) {
   out_report.rumble_l[3] = power;
   out_report.rumble_r[0] = 0x00;
   out_report.rumble_r[1] = 0x01;
-  out_report.rumble_r[2] = 0x40;
-  out_report.rumble_r[3] = 0x40;
-
-  tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
-}
-
-void rumble_high(int freq, int power) {
-  memset(&out_report, 0, sizeof(out_report));
-  out_report.command = 0x10;  // Rumble only
-  out_report.sequence_counter = seq_counter++ & 0x0F;
-
-  out_report.rumble_l[0] = 0x00;
-  out_report.rumble_l[1] = 0x01;
-  out_report.rumble_l[2] = 0x40;
-  out_report.rumble_l[3] = 0x40;
-  out_report.rumble_r[0] = freq;
-  out_report.rumble_r[1] = power;
-  out_report.rumble_r[2] = 0x40;
-  out_report.rumble_r[3] = 0x40;
+  out_report.rumble_r[2] = freq;
+  out_report.rumble_r[3] = power;
 
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
 }
@@ -291,10 +274,8 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
 
   if (report[3] & 0x01) rumble_low(low_freq, low_power); // Y
   else if (report[3] & 0x02) rumble_low(0x70, 0x7f); // X
-  else if (report[3] & 0x04) rumble_low(0x5c, 0x55); // B
-  else if (report[3] & 0x08) rumble_low(0x65, 0x60); // A
-
-  else if (report[3] & 0x40) rumble_high(high_freq, high_power);
+  else if (report[3] & 0x04) rumble_low(0x5c, 0x7f); // B
+  else if (report[3] & 0x08) rumble_low(0x65, 0x7f); // A
   else rumble_low(0x40, 0x40);
 
   // 受信があったらタイムスタンプのみ更新する。
