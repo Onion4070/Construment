@@ -5,10 +5,25 @@ wxBEGIN_EVENT_TABLE(DrawPanel, wxPanel)
 	EVT_PAINT(DrawPanel::OnPaint)
 wxEND_EVENT_TABLE()
 
+// ペン定義
+wxPen blackPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
+wxPen bluePen(*wxBLUE, 2, wxPENSTYLE_SOLID); // 青色ペン，太さ2, 実線
+wxPen anyColorPen(wxColor(255, 100, 100), 5); // 任意の色(薄い赤)，太さ5
+
+
 DrawPanel::DrawPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY) {
 	// 背景色を白に設定
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
 	SetBackgroundColour(*wxWHITE);
+
+	// SVG読み込み
+	wxString path_treble = wxT("assets/treble.svg");
+	wxString path_bass   = wxT("assets/bass.svg");
+	
+	wxBitmapBundle bundle_treble = wxBitmapBundle::FromSVGFile(path_treble, wxSize(300, 300));
+	wxBitmapBundle bundle_bass   = wxBitmapBundle::FromSVGFile(path_bass, wxSize(150, 150));
+	svgBitmapTreble = bundle_treble.GetBitmap(wxSize(300, 300));
+	svgBitmapBass   = bundle_bass.GetBitmap(wxSize(150, 150));
 }
 
 void DrawPanel::ClearBackground(wxGCDC& gdc) {
@@ -17,10 +32,11 @@ void DrawPanel::ClearBackground(wxGCDC& gdc) {
 	gdc.DrawRectangle(GetClientRect());
 }
 
-void DrawPanel::DrawScoreLine(wxGCDC& gdc) {
-	uint8_t offset = 5;
-	for (int i = 0; i < 5; i++) {
-		gdc.DrawLine(0, offset + 50*i, 1000, offset + 50*i);
+// 五線の描画(上下同時に描画)
+void DrawPanel::DrawScoreLine(wxGCDC& gdc, int width = 50, int offset = 50) {
+	for (int i = 0; i < 11; i++) {
+		if (i == 5) continue; // 上下の五線の間の線は描画しない
+		gdc.DrawLine(0, offset + width*i, this->GetSize().GetWidth(), offset + width*i);
 	}
 }
 
@@ -29,14 +45,8 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	wxGCDC gdc(dc);
 	ClearBackground(gdc);
 
-	wxPen bluePen(*wxBLUE, 2, wxPENSTYLE_SOLID); // 青色ペン，太さ2, 実線
-
-	wxPen anyColorPen(wxColor(255, 100, 100), 5); // 任意の色(薄い赤)，太さ5
-
-	gdc.SetPen(bluePen);
-	gdc.DrawLine(50, 50, 200, 100); // (50, 50)から(200, 100)まで直線を描画
+	gdc.SetPen(blackPen);
 	DrawScoreLine(gdc);
-
 
 	gdc.DrawCircle(300, 100, 50); // 中心(300, 100), 半径50の円を描画
 
@@ -48,4 +58,7 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 		points[i] = wxPoint(500 + 50 * cos(angle), 100 + 50 * sin(angle)); // 中心(500, 100), 半径50
 	}
 	gdc.DrawPolygon(8, points);
+
+	gdc.DrawBitmap(svgBitmapTreble, 50, 20, true); // ト音記号
+	gdc.DrawBitmap(svgBitmapBass, 50, 350, true); // ヘ音記号
 }
