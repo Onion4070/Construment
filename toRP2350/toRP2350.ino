@@ -256,39 +256,52 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance,
 // - 半音 (+1 / -1) やオクターブ (+12 / -12) 単位で簡単に移調できるようにする。
 //
 // 構成と使い方
-// - enum Scale::Note は「セミトーン順のインデックス」です（0 が最も低いノート）。
-//   そのためインデックスに対して加減算するだけで移調できます。
-// - 実際にコントローラへ渡す値（0x2d 等）は配列 codes[] に格納しています。
-//   インデックス -> デバイスコード は Scale::code(note) で取得します。
-// - 範囲外アクセスは自動で下限/上限へクランプするため、安全に使えます。
+// - enum Scale::Note は「セミトーン順のインデックス」です（列挙子の先頭が最も低い音になります）。
+//   インデックスに対して加減算するだけで移調できます（例: +1 = 半音上、+12 = 1オクターブ上）。
+// - 実際にコントローラへ渡す周波数コード（ペア high/low）は配列 codes[] に格納しています。
+//   インデックス -> デバイスコード は Scale::code(note) で Scale::CodePair を取得します。
+// - 範囲外アクセスは自動で下限/上限へクランプされます。
 //
-// 例:
+// 使用例（CodePair を取り出して rumble に渡す）:
+// {
 //   // C4 を半音上げて振動を送る
-//   rumble( Scale::code( Scale::transpose(Scale::C4, +1) ), amp );
+//   auto cp = Scale::code( Scale::transpose(Scale::C4, +1) );
+//   rumble(cp.high, cp.low, amp_high, amp_low);
+// }
+// {
 //   // A4 を 1 オクターブ下げる
-//   auto n = Scale::down_octave(Scale::A4);
-//   rumble( Scale::code(n), amp );
+//   auto n = Scale::transpose(Scale::A4, -12);
+//   auto cp = Scale::code(n);
+//   rumble(cp.high, cp.low, amp_high, amp_low);
+// }
 namespace Scale {
   enum Note : int8_t {
                                        Gs2, A2, As2, B2,
     C3, Cs3, D3, Ds3, E3, F3, Fs3, G3, Gs3, A3, As3, B3,
     C4, Cs4, D4, Ds4, E4, F4, Fs4, G4, Gs4, A4, As4, B4,
-    C5, Cs5, D5,
+    C5, Cs5, D5, Ds5, E5, F5, Fs5, G5, Gs5, A5, As5, B5,
+    C6, Cs6,
     Silence,
     COUNT
   };
 
+  struct CodePair { uint8_t high; uint8_t low; };
+
+  // デフォルト値
+  const int hi_0 = 0x00;
+  const int lo_0 = 0x00;
   // enum と同じ半音順で並んでいます。
-  static const uint8_t codes[COUNT] = {
-                                                    0x2d, 0x30, 0x33, 0x35,
-    0x38, 0x3b, 0x3d, 0x3f, 0x42, 0x45, 0x48, 0x4a, 0x4d, 0x50, 0x52, 0x55,
-    0x58, 0x5a, 0x5d, 0x60, 0x62, 0x65, 0x68, 0x6a, 0x6d, 0x70, 0x72, 0x75,
-    0x78, 0x7a, 0x7d,
-    0x00
+  static const CodePair codes[COUNT] = {
+                                                                                                            {hi_0,0x2d}, {hi_0,0x30}, {hi_0,0x33}, {hi_0,0x35},
+    {hi_0,0x38}, {hi_0,0x3b}, {hi_0,0x3d}, {hi_0,0x3f}, {hi_0,0x42}, {hi_0,0x45}, {hi_0,0x48}, {hi_0,0x4a}, {hi_0,0x4d}, {hi_0,0x50}, {hi_0,0x52}, {hi_0,0x55},
+    {hi_0,0x58}, {hi_0,0x5a}, {hi_0,0x5d}, {hi_0,0x60}, {hi_0,0x62}, {hi_0,0x65}, {hi_0,0x68}, {hi_0,0x6a}, {hi_0,0x6d}, {hi_0,0x70}, {hi_0,0x72}, {hi_0,0x75},
+    {hi_0,0x78}, {hi_0,0x7a}, {hi_0,0x7d}, {0x7c,lo_0}, {0x88,lo_0}, {0x94,lo_0}, {0x9c,lo_0}, {0xa8,lo_0}, {0xb4,lo_0}, {0xbc,lo_0}, {0xc8,lo_0}, {0xd4,lo_0},
+    {0xdc,lo_0}, {0xe8,lo_0},
+    {hi_0,lo_0}
   };
 
   // ノート（enum）から機器固有のコードを取得します（範囲をクランプ）。
-  inline uint8_t code(Note n) {
+  inline CodePair code(Note n) {
     int idx = (int)n;
     if (idx < 0) idx = 0;
     if (idx >= COUNT) idx = COUNT - 1;
@@ -302,33 +315,26 @@ namespace Scale {
     if (idx >= COUNT) idx = COUNT - 1;
     return (Note)idx;
   }
-
-  // ヘルパ関数
-  inline Note up_semitone(Note n) { return transpose(n, +1); }
-  inline Note down_semitone(Note n) { return transpose(n, -1); }
-  inline Note up_octave(Note n) { return transpose(n, +12); }
-  inline Note down_octave(Note n) { return transpose(n, -12); }
 }
 // --- end inlined note_map ---
 
-void rumble(int frequency, int amplitude) {
+void rumble(int frequency_high, int frequency_low, int amplitude_high, int amplitude_low) {
   memset(&out_report, 0, sizeof(out_report));
   out_report.command = 0x10;  // Rumble only
   out_report.sequence_counter = seq_counter++ & 0x0F;
 
-  out_report.rumble_l[0] = 0x00;
-  out_report.rumble_l[1] = 0x01;
-  out_report.rumble_l[2] = frequency;
-  out_report.rumble_l[3] = amplitude;
-  out_report.rumble_r[0] = 0x00;
-  out_report.rumble_r[1] = 0x01;
-  out_report.rumble_r[2] = frequency;
-  out_report.rumble_r[3] = amplitude;
+  if (frequency_high==0x00) amplitude_high = 0x01;
+  if (frequency_low==0x00) amplitude_low = 0x40;
+
+  out_report.rumble_l[0] = out_report.rumble_r[0] = frequency_high;
+  out_report.rumble_l[1] = out_report.rumble_r[1] = amplitude_high;
+  out_report.rumble_l[2] = out_report.rumble_r[2] = frequency_low;
+  out_report.rumble_l[3] = out_report.rumble_r[3] = amplitude_low;
 
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
 }
 
-int amp = 0x60;
+int amp_high = 0x7f, amp_low = 0x60;
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
                                 uint8_t const* report, uint16_t len) {
   if (len == 0) return;
@@ -346,11 +352,17 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
   if (report[5] & SwitchPro::Buttons2::L) semitone_offset -= 1;   // L: semitone down
   if (report[5] & SwitchPro::Buttons2::ZL) semitone_offset -= 12; // ZL: octave down
 
-  // +/- ボタン（Buttons1）で音量調整
-  if (report[4] & SwitchPro::Buttons1::MINUS) amp--;
-  if (report[4] & SwitchPro::Buttons1::PLUS)  amp++;
-  if (amp < 0x40) amp = 0x40;
-  if (amp > 0x7f) amp = 0x7f;
+  // +/- ボタン（Buttons1）で高音域の音量調整
+  if (report[4] & SwitchPro::Buttons1::PLUS)  amp_high+=2;
+  if (report[4] & SwitchPro::Buttons1::MINUS) amp_high-=2;
+  if (amp_high < 0x01) amp_high = 0x01;
+  if (amp_high > 0xff) amp_high = 0xff;
+
+  // HOME/CAPTURE ボタンで低音域の音量調整
+  if (report[4] & SwitchPro::Buttons1::HOME)    amp_low++;
+  if (report[4] & SwitchPro::Buttons1::CAPTURE) amp_low--;
+  if (amp_low < 0x40) amp_low = 0x40;
+  if (amp_low > 0x7f) amp_low = 0x7f;
 
   // ボタンを基準ノートに割当て
   Scale::Note base = Scale::C4;
@@ -370,16 +382,18 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
     else if (report[3] & SwitchPro::Buttons0::Y)  { base = Scale::C5; note_selected = true; }
   }
 
+  Scale::CodePair code;
   if (note_selected) {
     Scale::Note target = Scale::transpose(base, semitone_offset);
-    uint8_t code = Scale::code(target);
-    Serial.printf("note code=%02x, amp=%02x, offset=%d\r\n", code, amp, semitone_offset);
-    rumble(code, amp);
+    code = Scale::code(target);
+    Serial.printf("note code=(%02x,%02x)", code.high, code.low);
   } else {
     // ノートボタンが押されていない場合: アイドル振動を送信
-    Serial.printf("idle rumble , amp=%02x, offset=%d\r\n", amp, semitone_offset);
-    rumble(0x40, 0x40);
+    code = Scale::code(Scale::Silence);
+    Serial.printf("idle rumble      ");
   }
+  Serial.printf(" amp=(%02x,%02x) offset=%d\r\n", amp_high, amp_low, semitone_offset);
+  rumble(code.high, code.low, amp_high, amp_low);
 
   // 受信があったらタイムスタンプのみ更新する。
   if (is_procon && dev_addr == procon_addr) {
@@ -418,11 +432,11 @@ void send_keepalive() {
 
   out_report.rumble_l[0] = 0x00;
   out_report.rumble_l[1] = 0x01;
-  out_report.rumble_l[2] = 0x60;
-  out_report.rumble_l[3] = 0x60;
+  out_report.rumble_l[2] = 0x00;
+  out_report.rumble_l[3] = 0x40;
   out_report.rumble_r[0] = 0x00;
   out_report.rumble_r[1] = 0x01;
-  out_report.rumble_r[2] = 0x40;
+  out_report.rumble_r[2] = 0x00;
   out_report.rumble_r[3] = 0x40;
 
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
