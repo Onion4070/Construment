@@ -10,7 +10,9 @@ bool App::OnInit() {
 	MainFrame* mainFrame = new MainFrame("Construment App");
 
 	// フレームサイズ設定
-	mainFrame->SetSize(1280, 720);
+	mainFrame->SetClientSize(wxSize(1280, 720));
+	mainFrame->SetMinClientSize(wxSize(1280, 720));
+	mainFrame->SetMaxClientSize(wxSize(1280, 720));
 
 	// フレーム初期位置を中央に
 	mainFrame->Center();
