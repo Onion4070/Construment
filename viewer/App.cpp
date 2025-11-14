@@ -2,10 +2,23 @@
 #include "MainFrame.h"
 #include <wx/wx.h>
 
+#define DEBUG
+
 // インスタンス生成
 wxIMPLEMENT_APP(App);
 
 bool App::OnInit() {
+
+	// コンソール画面を強制的に出す
+	#ifdef DEBUG
+		if (AllocConsole()) {
+			FILE* fp;
+			freopen_s(&fp, "CONOUT$", "w", stdout);
+			freopen_s(&fp, "CONOUT$", "w", stderr);
+			std::cout << "Debug console started" << std::endl;
+		}
+	#endif
+
 	// タイトル設定
 	MainFrame* mainFrame = new MainFrame("Construment App");
 
