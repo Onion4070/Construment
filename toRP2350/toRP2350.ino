@@ -270,19 +270,21 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance,
 //   rumble( Scale::code(n), amp );
 namespace Scale {
   enum Note : int8_t {
-    Gs2 = 0, A2, As2, B2,
+                                       Gs2, A2, As2, B2,
     C3, Cs3, D3, Ds3, E3, F3, Fs3, G3, Gs3, A3, As3, B3,
     C4, Cs4, D4, Ds4, E4, F4, Fs4, G4, Gs4, A4, As4, B4,
-    C5, Cs5, D5, Ds5,
+    C5, Cs5, D5,
+    Silence,
     COUNT
   };
 
   // enum と同じ半音順で並んでいます。
   static const uint8_t codes[COUNT] = {
-    0x2d, 0x30, 0x33, 0x35,
+                                                    0x2d, 0x30, 0x33, 0x35,
     0x38, 0x3b, 0x3d, 0x3f, 0x42, 0x45, 0x48, 0x4a, 0x4d, 0x50, 0x52, 0x55,
     0x58, 0x5a, 0x5d, 0x60, 0x62, 0x65, 0x68, 0x6a, 0x6d, 0x70, 0x72, 0x75,
-    0x78, 0x7a, 0x7d, 0x00
+    0x78, 0x7a, 0x7d,
+    0x00
   };
 
   // ノート（enum）から機器固有のコードを取得します（範囲をクランプ）。
