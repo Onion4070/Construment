@@ -33,12 +33,6 @@ DrawPanel::DrawPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY) {
 	for (const auto& port : ports) {
 		cout << "Port: " << port.port << ", Description: " << port.description << endl;
 	}
-
-	gamepad.Connect("COM5");
-}
-
-void DrawPanel::ConnectGamePad(const std::string& portName) {
-	gamepad.Connect(portName);
 }
 
 void DrawPanel::ClearBackground(wxGCDC& gdc) {

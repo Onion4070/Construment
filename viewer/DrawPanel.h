@@ -9,7 +9,7 @@ class DrawPanel : public wxPanel
 {
 public:
 	DrawPanel(wxWindow* parent);
-	void ConnectGamePad(const std::string& portName);
+	GamePad gamepad;
 
 private:
 	// 描画イベントハンドラ
@@ -19,8 +19,6 @@ private:
 
 	wxBitmap svgBitmapTreble; // SVG画像を保持するビットマップ
 	wxBitmap svgBitmapBass;
-
-	GamePad gamepad;
 
 	// イベントテーブル宣言
 	wxDECLARE_EVENT_TABLE();

@@ -1,5 +1,6 @@
 ﻿#include "MainFrame.h"
 #include "SerialUtils.h"
+#include "DrawPanel.h"
 #include <wx/wx.h>
 
 MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) {
@@ -42,5 +43,12 @@ void MainFrame::OnConnect(wxCommandEvent& event) {
 
 	wxString portName = comChoice->GetString(sel);
 	portName = portName.BeforeFirst(' '); // ポート名だけ抽出
-	drawPanel->ConnectGamePad(portName.ToStdString());
+
+	if (drawPanel->gamepad.IsConnected()) {
+		drawPanel->gamepad.Disconnect();
+		connectButton->SetLabel("Connect");
+		return;
+	}
+	drawPanel->gamepad.Connect(portName.ToStdString());
+	connectButton->SetLabel("Disconnect");
 }
