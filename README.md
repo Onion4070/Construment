@@ -13,7 +13,7 @@ Switch Pro Controller を RP2350-USB-A で USB ホスト接続し、ボタン入
 2. Tools: CPU Speed を 120 の倍数に、USB Stack を "Adafruit TinyUSB" に設定
 3. ボード (RP2350-USB-A) へ書き込み
 4. Pro Controller を RP2350-USB-A のホスト端子に接続
-5. (任意) PC と接続してシリアル (Serial1, 115200) でログを確認
+5. (任意) PC と接続してシリアル (Serial, 115200) でログを確認
 
 **重要**: Pro Controller は RP2350-USB-A の電源投入**前**に接続してください。
 

@@ -280,7 +280,7 @@ namespace Scale {
     C3, Cs3, D3, Ds3, E3, F3, Fs3, G3, Gs3, A3, As3, B3,
     C4, Cs4, D4, Ds4, E4, F4, Fs4, G4, Gs4, A4, As4, B4,
     C5, Cs5, D5, Ds5, E5, F5, Fs5, G5, Gs5, A5, As5, B5,
-    C6, Cs6,
+    C6, Cs6, D6, Ds6,
     Silence,
     COUNT
   };
@@ -296,7 +296,7 @@ namespace Scale {
     {hi_0,0x38}, {hi_0,0x3b}, {hi_0,0x3d}, {hi_0,0x3f}, {hi_0,0x42}, {hi_0,0x45}, {hi_0,0x48}, {hi_0,0x4a}, {hi_0,0x4d}, {hi_0,0x50}, {hi_0,0x52}, {hi_0,0x55},
     {hi_0,0x58}, {hi_0,0x5a}, {hi_0,0x5d}, {hi_0,0x60}, {hi_0,0x62}, {hi_0,0x65}, {hi_0,0x68}, {hi_0,0x6a}, {hi_0,0x6d}, {hi_0,0x70}, {hi_0,0x72}, {hi_0,0x75},
     {hi_0,0x78}, {hi_0,0x7a}, {hi_0,0x7d}, {0x7c,lo_0}, {0x88,lo_0}, {0x94,lo_0}, {0x9c,lo_0}, {0xa8,lo_0}, {0xb4,lo_0}, {0xbc,lo_0}, {0xc8,lo_0}, {0xd4,lo_0},
-    {0xdc,lo_0}, {0xe8,lo_0},
+    {0xdc,lo_0}, {0xe8,lo_0}, {0xf4,lo_0}, {0xfc,lo_0},
     {hi_0,lo_0}
   };
 
@@ -347,10 +347,10 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
 
   // 押されているボタンから移調オフセットを決定
   int semitone_offset = 0;
-  if (report[3] & SwitchPro::Buttons0::R) semitone_offset += 1;   // R: semitone up
-  if (report[3] & SwitchPro::Buttons0::ZR) semitone_offset += 12; // ZR: octave up
-  if (report[5] & SwitchPro::Buttons2::L) semitone_offset -= 1;   // L: semitone down
-  if (report[5] & SwitchPro::Buttons2::ZL) semitone_offset -= 12; // ZL: octave down
+  if (report[3] & SwitchPro::Buttons0::R)   semitone_offset += 1;   // R:  semitone up
+  if (report[3] & SwitchPro::Buttons0::ZR)  semitone_offset += 12;  // ZR: octave up
+  if (report[5] & SwitchPro::Buttons2::L)   semitone_offset -= 1;   // L:  semitone down
+  if (report[5] & SwitchPro::Buttons2::ZL)  semitone_offset -= 12;  // ZL: octave down
 
   // +/- ボタン（Buttons1）で高音域の音量調整
   if (report[4] & SwitchPro::Buttons1::PLUS)  amp_high+=2;
@@ -430,14 +430,10 @@ void send_keepalive() {
   out_report.command = 0x10;  // Rumble only
   out_report.sequence_counter = seq_counter++ & 0x0F;
 
-  out_report.rumble_l[0] = 0x00;
-  out_report.rumble_l[1] = 0x01;
-  out_report.rumble_l[2] = 0x00;
-  out_report.rumble_l[3] = 0x40;
-  out_report.rumble_r[0] = 0x00;
-  out_report.rumble_r[1] = 0x01;
-  out_report.rumble_r[2] = 0x00;
-  out_report.rumble_r[3] = 0x40;
+  out_report.rumble_l[0] = out_report.rumble_r[0] = 0x00;
+  out_report.rumble_l[1] = out_report.rumble_r[1] = 0x01;
+  out_report.rumble_l[2] = out_report.rumble_r[2] = 0x00;
+  out_report.rumble_l[3] = out_report.rumble_r[3] = 0x40;
 
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
 }
