@@ -10,6 +10,10 @@ public:
 	MainFrame(const wxString& title);
 
 private:
-	DrawPanel* m_drawPanel;
+	void OnConnect(wxCommandEvent& event);
+
+	DrawPanel* drawPanel;
+	wxChoice* comChoice;
+	wxButton* connectButton;
 };
 

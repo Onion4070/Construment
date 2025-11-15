@@ -1,4 +1,5 @@
 ﻿#include "DrawPanel.h"
+#include "SerialUtils.h"
 
 // イベントテーブル定義
 wxBEGIN_EVENT_TABLE(DrawPanel, wxPanel)
@@ -24,6 +25,11 @@ DrawPanel::DrawPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY) {
 	wxBitmapBundle bundle_bass   = wxBitmapBundle::FromSVGFile(path_bass, wxSize(150, 150));
 	svgBitmapTreble = bundle_treble.GetBitmap(wxSize(300, 300));
 	svgBitmapBass   = bundle_bass.GetBitmap(wxSize(150, 150));
+
+	auto ports = SerialUtils::AvailablePorts();
+	for (const auto& port : ports) {
+		std::cout << "Port: " << port.port << ", Description: " << port.description << std::endl;
+	}
 }
 
 void DrawPanel::ClearBackground(wxGCDC& gdc) {

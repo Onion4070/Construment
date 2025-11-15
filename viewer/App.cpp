@@ -1,4 +1,5 @@
 ﻿#include "App.h"
+#include "SerialUtils.h"
 #include "MainFrame.h"
 #include <wx/wx.h>
 
@@ -19,6 +20,7 @@ bool App::OnInit() {
 		}
 	#endif
 
+	
 	// タイトル設定
 	MainFrame* mainFrame = new MainFrame("Construment App");
 
