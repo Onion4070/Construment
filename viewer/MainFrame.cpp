@@ -42,5 +42,4 @@ void MainFrame::OnConnect(wxCommandEvent& event) {
 
 	wxString portName = comChoice->GetString(sel);
 	portName = portName.BeforeFirst(' '); // ポート名だけ抽出
-	std::cout << "Connecting to " << portName << "..." << std::endl;
 }

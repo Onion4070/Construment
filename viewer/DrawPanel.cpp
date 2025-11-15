@@ -1,5 +1,8 @@
 ﻿#include "DrawPanel.h"
 #include "SerialUtils.h"
+#include <iostream>
+using std::cout;
+using std::endl;
 
 // イベントテーブル定義
 wxBEGIN_EVENT_TABLE(DrawPanel, wxPanel)
@@ -28,8 +31,10 @@ DrawPanel::DrawPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY) {
 
 	auto ports = SerialUtils::AvailablePorts();
 	for (const auto& port : ports) {
-		std::cout << "Port: " << port.port << ", Description: " << port.description << std::endl;
+		cout << "Port: " << port.port << ", Description: " << port.description << endl;
 	}
+
+	gamepad.Connect("COM5");
 }
 
 void DrawPanel::ClearBackground(wxGCDC& gdc) {
