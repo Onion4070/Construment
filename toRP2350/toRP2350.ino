@@ -294,8 +294,8 @@ namespace Scale {
   static const CodePair codes[COUNT] = {
                                                                                                             {hi_0,0x2d}, {hi_0,0x30}, {hi_0,0x33}, {hi_0,0x35},
     {hi_0,0x38}, {hi_0,0x3b}, {hi_0,0x3d}, {hi_0,0x3f}, {hi_0,0x42}, {hi_0,0x45}, {hi_0,0x48}, {hi_0,0x4a}, {hi_0,0x4d}, {hi_0,0x50}, {hi_0,0x52}, {hi_0,0x55},
-    {hi_0,0x58}, {hi_0,0x5a}, {hi_0,0x5d}, {hi_0,0x60}, {hi_0,0x62}, {hi_0,0x65}, {hi_0,0x68}, {hi_0,0x6a}, {hi_0,0x6d}, {hi_0,0x70}, {hi_0,0x72}, {hi_0,0x75},
-    {hi_0,0x78}, {hi_0,0x7a}, {hi_0,0x7d}, {0x7c,lo_0}, {0x88,lo_0}, {0x94,lo_0}, {0x9c,lo_0}, {0xa8,lo_0}, {0xb4,lo_0}, {0xbc,lo_0}, {0xc8,lo_0}, {0xd4,lo_0},
+    {hi_0,0x58}, {hi_0,0x5a}, {hi_0,0x5d}, {hi_0,0x60}, {0x08,0x62}, {0x14,0x65}, {0x1c,0x68}, {0x28,0x6a}, {0x34,0x6d}, {0x3c,0x70}, {0x48,0x72}, {0x54,0x75},
+    {0x5c,0x78}, {0x68,0x7a}, {0x74,0x7d}, {0x7c,lo_0}, {0x88,lo_0}, {0x94,lo_0}, {0x9c,lo_0}, {0xa8,lo_0}, {0xb4,lo_0}, {0xbc,lo_0}, {0xc8,lo_0}, {0xd4,lo_0},
     {0xdc,lo_0}, {0xe8,lo_0}, {0xf4,lo_0}, {0xfc,lo_0},
     {hi_0,lo_0}
   };
@@ -326,10 +326,14 @@ void rumble(int frequency_high, int frequency_low, int amplitude_high, int ampli
   if (frequency_high==0x00) amplitude_high = 0x01;
   if (frequency_low==0x00) amplitude_low = 0x40;
 
-  out_report.rumble_l[0] = out_report.rumble_r[0] = frequency_high;
-  out_report.rumble_l[1] = out_report.rumble_r[1] = amplitude_high;
-  out_report.rumble_l[2] = out_report.rumble_r[2] = frequency_low;
-  out_report.rumble_l[3] = out_report.rumble_r[3] = amplitude_low;
+  out_report.rumble_l[0] = 0x00;
+  out_report.rumble_l[1] = 0x01;
+  out_report.rumble_l[2] = frequency_low;
+  out_report.rumble_l[3] = amplitude_low;
+  out_report.rumble_r[0] = frequency_high;
+  out_report.rumble_r[1] = amplitude_high;
+  out_report.rumble_r[2] = 0x00;
+  out_report.rumble_r[3] = 0x40;
 
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
 }
