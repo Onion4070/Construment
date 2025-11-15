@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include <asio.hpp>
+#include <wx/wx.h>
+
 class GamePad
 {
 public:

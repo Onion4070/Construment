@@ -9,6 +9,7 @@ class DrawPanel : public wxPanel
 {
 public:
 	DrawPanel(wxWindow* parent);
+	void ConnectGamePad(const std::string& portName);
 
 private:
 	// 描画イベントハンドラ

@@ -42,4 +42,5 @@ void MainFrame::OnConnect(wxCommandEvent& event) {
 
 	wxString portName = comChoice->GetString(sel);
 	portName = portName.BeforeFirst(' '); // ポート名だけ抽出
+	drawPanel->ConnectGamePad(portName.ToStdString());
 }

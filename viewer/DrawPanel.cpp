@@ -37,6 +37,10 @@ DrawPanel::DrawPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY) {
 	gamepad.Connect("COM5");
 }
 
+void DrawPanel::ConnectGamePad(const std::string& portName) {
+	gamepad.Connect(portName);
+}
+
 void DrawPanel::ClearBackground(wxGCDC& gdc) {
 	gdc.SetBrush(wxBrush(GetBackgroundColour()));
 	gdc.SetPen(*wxTRANSPARENT_PEN);
