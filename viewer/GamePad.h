@@ -7,6 +7,8 @@ class GamePad
 public:
 	GamePad();
 	~GamePad();
+	std::vector<uint8_t> GetGamePad();
+
 	void Connect(const std::string& portName);
 	void Disconnect();
 	bool IsConnected() const { return connected; }
@@ -19,5 +21,8 @@ private:
 	bool connected = false;
 	uint8_t start_byte = 0xAA;
 	uint8_t end_byte = 0xBB;
+
+	std::mutex mtx;
+	std::vector<uint8_t> gamepad = {};
 };
 

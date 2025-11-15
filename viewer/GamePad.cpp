@@ -32,7 +32,6 @@ void GamePad::Connect(const std::string& portName) {
 
 		// 別スレッドで実行
 		ioThread = std::thread([this]() { 
-			io.run(); 
 			ReadLoop();
 		});
 
@@ -51,7 +50,6 @@ void GamePad::Disconnect() {
 	}
 	try {
 		serial.close();
-		io.stop();
 		if (ioThread.joinable()) {
 			ioThread.join();
 		}
@@ -82,14 +80,22 @@ void GamePad::ReadLoop() {
 				continue;
 			}
 
-			for (int i = 0; i < size; i++) {
-				cout << std::hex << std::setfill('0') << std::setw(2) << (int)controller_data[i] << " ";
-			}
-			cout << endl;
+			//for (int i = 0; i < size; i++) {
+			//	cout << std::hex << std::setfill('0') << std::setw(2) << (int)controller_data[i] << " ";
+			//}
+			//cout << endl;
+
+			std::lock_guard<std::mutex> lock(mtx);
+			gamepad = controller_data;
 		}
 		catch (std::exception& e) {
 			cerr << "Serial port read error" << e.what() << endl;
 			connected = false;
 		}
 	}
+}
+
+std::vector<uint8_t> GamePad::GetGamePad() {
+	std::lock_guard<std::mutex> lock(mtx);
+	return gamepad;
 }

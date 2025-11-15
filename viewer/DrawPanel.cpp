@@ -6,6 +6,7 @@ using std::endl;
 // イベントテーブル定義
 wxBEGIN_EVENT_TABLE(DrawPanel, wxPanel)
 	EVT_PAINT(DrawPanel::OnPaint)
+	EVT_TIMER(wxID_ANY, DrawPanel::OnTimer)
 wxEND_EVENT_TABLE()
 
 // ペン定義
@@ -14,7 +15,10 @@ wxPen bluePen(*wxBLUE, 2, wxPENSTYLE_SOLID); // 青色ペン，太さ2, 実線
 wxPen anyColorPen(wxColor(255, 100, 100), 5); // 任意の色(薄い赤)，太さ5
 
 
-DrawPanel::DrawPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY) {
+DrawPanel::DrawPanel(wxWindow* parent)
+	: wxPanel(parent, wxID_ANY), 
+	refresh_timer(this, wxID_ANY)
+{
 	// 背景色を白に設定
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
 	SetBackgroundColour(*wxWHITE);
@@ -27,12 +31,18 @@ DrawPanel::DrawPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY) {
 	wxBitmapBundle bundle_bass   = wxBitmapBundle::FromSVGFile(path_bass, wxSize(150, 150));
 	svgBitmapTreble = bundle_treble.GetBitmap(wxSize(300, 300));
 	svgBitmapBass   = bundle_bass.GetBitmap(wxSize(150, 150));
+
+	refresh_timer.Start(8);
 }
 
 void DrawPanel::ClearBackground(wxGCDC& gdc) {
 	gdc.SetBrush(wxBrush(GetBackgroundColour()));
 	gdc.SetPen(*wxTRANSPARENT_PEN);
 	gdc.DrawRectangle(GetClientRect());
+}
+
+void DrawPanel::OnTimer(wxTimerEvent& event) {
+	Refresh();
 }
 
 // 五線の描画(上下同時に描画)
@@ -70,4 +80,8 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	gdc.SetFont(font);
 	wxString info = wxString::Format("Vol. %d", GetSize().GetWidth()); // 仮
 	gdc.DrawText(info, GetSize().GetHeight()/2, 550); // テキスト描画
+
+	auto gamepad_state = gamepad.GetGamePad();
+	if (gamepad_state.empty() || !gamepad.IsConnected()) return;
+	cout << (int)gamepad_state[3] << endl;
 }

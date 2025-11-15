@@ -16,9 +16,11 @@ private:
 	void OnPaint(wxPaintEvent& event);
 	void ClearBackground(wxGCDC& gdc);
 	void DrawScoreLine(wxGCDC& gdc, int width, int offset);
+	void OnTimer(wxTimerEvent& event);
 
 	wxBitmap svgBitmapTreble; // SVG画像を保持するビットマップ
 	wxBitmap svgBitmapBass;
+	wxTimer refresh_timer; // タイマー
 
 	// イベントテーブル宣言
 	wxDECLARE_EVENT_TABLE();
