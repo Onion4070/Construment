@@ -1,7 +1,10 @@
 ﻿#pragma once
 #include <iostream>
+#include <iomanip>
 #include "GamePad.h"
+
 using std::cout;
+using std::cerr;
 using std::endl;
 
 GamePad::GamePad() : serial(io){
@@ -30,6 +33,7 @@ void GamePad::Connect(const std::string& portName) {
 		// 別スレッドで実行
 		ioThread = std::thread([this]() { 
 			io.run(); 
+			ReadLoop();
 		});
 
 		connected = true;
@@ -56,5 +60,36 @@ void GamePad::Disconnect() {
 	}
 	catch (std::exception& e) {
 		cout << "Error during disconnect: " << e.what() << endl;
+	}
+}
+
+void GamePad::ReadLoop() {
+	while (connected) {
+		try {
+			uint8_t current_byte;
+			asio::read(serial, asio::buffer(&current_byte, 1));
+			if (current_byte != start_byte) continue;
+
+			uint8_t size;
+			asio::read(serial, asio::buffer(&size, 1));
+			std::vector<uint8_t> controller_data(size, 0);
+			asio::read(serial, asio::buffer(controller_data));
+
+			asio::read(serial, asio::buffer(&current_byte, 1));
+
+			if (current_byte != end_byte) {
+				cerr << "Invalid end byte" << endl;
+				continue;
+			}
+
+			for (int i = 0; i < size; i++) {
+				cout << std::hex << std::setfill('0') << std::setw(2) << (int)controller_data[i] << " ";
+			}
+			cout << endl;
+		}
+		catch (std::exception& e) {
+			cerr << "Serial port read error" << e.what() << endl;
+			connected = false;
+		}
 	}
 }

@@ -12,9 +12,12 @@ public:
 	bool IsConnected() const { return connected; }
 
 private:
+	void ReadLoop();
 	asio::io_context io;
 	asio::serial_port serial;
 	std::thread ioThread;
 	bool connected = false;
+	uint8_t start_byte = 0xAA;
+	uint8_t end_byte = 0xBB;
 };
 

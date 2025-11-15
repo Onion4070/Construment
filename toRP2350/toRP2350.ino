@@ -102,7 +102,7 @@ struct OutputReport {
 void send_report(uint8_t size) {
   out_report.sequence_counter = seq_counter++ & 0x0F;
   if (!tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, size)) {
-    Serial.printf("send_report failed. state=%d\r\n", (int)init_state);
+    Serial1.printf("send_report failed. state=%d\r\n", (int)init_state);
   }
 }
 
@@ -112,17 +112,17 @@ static bool send_short_report(const char* name, uint8_t seq_value) {
   out_report.command = SwitchPro::CMD::HID;
   out_report.sequence_counter = seq_value;
   const uint8_t* b = (const uint8_t*)&out_report;
-  Serial.printf("%s: addr=%d inst=%d size=2 data=%02X %02X\r\n", name, procon_addr, procon_instance, b[0], b[1]);
+  Serial1.printf("%s: addr=%d inst=%d size=2 data=%02X %02X\r\n", name, procon_addr, procon_instance, b[0], b[1]);
   // 少し待ってから送信
   delay(50);
   bool ok = tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 2);
-  Serial.printf("%s attempt=1 -> %d\r\n", name, ok);
+  Serial1.printf("%s attempt=1 -> %d\r\n", name, ok);
   if (!ok) {
     // 状態を前進させて再試行を一度だけ行う
     USBHost.task();
     delay(20);
     ok = tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 2);
-    Serial.printf("%s attempt=2 -> %d\r\n", name, ok);
+    Serial1.printf("%s attempt=2 -> %d\r\n", name, ok);
   }
   return ok;
 }
@@ -133,8 +133,8 @@ static void set_controller_error_state(const char* reason) {
   procon_addr = 0;
   procon_instance = 0;
   setLEDColor(15, 0, 0);
-  Serial.print("ERROR: ");
-  Serial.println(reason);
+  Serial1.print("ERROR: ");
+  Serial1.println(reason);
 }
 
 // タイムアウトチェック
@@ -160,7 +160,7 @@ void advance_init() {
       // 2バイトの簡易レポートはヘルパで送る（ログを統一）
       if (send_short_report("send(HANDSHAKE)", SwitchPro::CMD::HANDSHAKE)) {
         init_state = InitState::DISABLE_TIMEOUT;
-        Serial.println("advance_init(): -> DISABLE_TIMEOUT");
+        Serial1.println("advance_init(): -> DISABLE_TIMEOUT");
       }
       break;
 
@@ -173,7 +173,7 @@ void advance_init() {
       // こちらも短いレポートなのでヘルパで送信
       if (send_short_report("send(DISABLE_TIMEOUT)", SwitchPro::CMD::DISABLE_TIMEOUT)) {
         init_state = InitState::LED;
-        Serial.println("advance_init(): -> LED");
+        Serial1.println("advance_init(): -> LED");
       }
       break;
 
@@ -233,10 +233,10 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance,
                       uint8_t const* desc_report, uint16_t desc_len) {
   uint16_t vid, pid;
   if (tuh_vid_pid_get(dev_addr, &vid, &pid)) {
-    Serial.printf("VID:%04X PID:%04X\r\n", vid, pid);
+    Serial1.printf("VID:%04X PID:%04X\r\n", vid, pid);
 
     if (vid == VID_NINTENDO && pid == PID_SWITCH_PRO) {
-      Serial.println("Switch Pro Controller detected!");
+      Serial1.println("Switch Pro Controller detected!");
       procon_addr = dev_addr;
       procon_instance = instance;
       is_procon = true;
@@ -334,6 +334,18 @@ void rumble(int frequency_high, int frequency_low, int amplitude_high, int ampli
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
 }
 
+#pragma pack(push, 1)
+struct ControllerData {
+  uint8_t buttons0;
+  uint8_t buttons1;
+  uint8_t buttons2;
+  uint8_t code_high;
+  uint8_t code_low;
+  uint8_t amp_high;
+  uint8_t amp_low;
+} controller_data;
+#pragma pack(pop)
+
 int amp_high = 0x7f, amp_low = 0x60;
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
                                 uint8_t const* report, uint16_t len) {
@@ -386,14 +398,51 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
   if (note_selected) {
     Scale::Note target = Scale::transpose(base, semitone_offset);
     code = Scale::code(target);
-    Serial.printf("note code=(%02x,%02x)", code.high, code.low);
+    Serial1.printf("note code=(%02x,%02x)", code.high, code.low);
   } else {
     // ノートボタンが押されていない場合: アイドル振動を送信
     code = Scale::code(Scale::Silence);
-    Serial.printf("idle rumble      ");
+    Serial1.printf("idle rumble      ");
   }
-  Serial.printf(" amp=(%02x,%02x) offset=%d\r\n", amp_high, amp_low, semitone_offset);
+  Serial1.printf(" amp=(%02x,%02x) offset=%d\r\n", amp_high, amp_low, semitone_offset);
   rumble(code.high, code.low, amp_high, amp_low);
+
+  const uint8_t size = 7;
+  memset((void*)&controller_data, 0, size);
+
+  controller_data.buttons0 |= report[3] & SwitchPro::Buttons0::Y;
+  controller_data.buttons0 |= report[3] & SwitchPro::Buttons0::X;
+  controller_data.buttons0 |= report[3] & SwitchPro::Buttons0::B;
+  controller_data.buttons0 |= report[3] & SwitchPro::Buttons0::A;
+  controller_data.buttons0 |= report[3] & SwitchPro::Buttons0::R;
+  controller_data.buttons0 |= report[3] & SwitchPro::Buttons0::ZR;
+
+  controller_data.buttons1 |= report[4] & SwitchPro::Buttons1::MINUS;
+  controller_data.buttons1 |= report[4] & SwitchPro::Buttons1::PLUS;
+  controller_data.buttons1 |= report[4] & SwitchPro::Buttons1::R3;
+  controller_data.buttons1 |= report[4] & SwitchPro::Buttons1::L3;
+  controller_data.buttons1 |= report[4] & SwitchPro::Buttons1::HOME;
+  controller_data.buttons1 |= report[4] & SwitchPro::Buttons1::CAPTURE;
+
+  controller_data.buttons2 |= report[5] & SwitchPro::Buttons2::DPAD_DOWN;
+  controller_data.buttons2 |= report[5] & SwitchPro::Buttons2::DPAD_UP;
+  controller_data.buttons2 |= report[5] & SwitchPro::Buttons2::DPAD_RIGHT;
+  controller_data.buttons2 |= report[5] & SwitchPro::Buttons2::DPAD_LEFT;
+  controller_data.buttons2 |= report[5] & SwitchPro::Buttons2::L;
+  controller_data.buttons2 |= report[5] & SwitchPro::Buttons2::ZL;
+
+  controller_data.code_high = code.high;
+  controller_data.code_low  = code.low;
+  controller_data.amp_high  = amp_high;
+  controller_data.amp_low   = amp_low;
+
+  const uint8_t start_byte = 0xAA;
+  const uint8_t end_byte   = 0xBB;
+
+  Serial.write(start_byte);
+  Serial.write(size);
+  Serial.write((uint8_t*)&controller_data, size);
+  Serial.write(end_byte);
 
   // 受信があったらタイムスタンプのみ更新する。
   if (is_procon && dev_addr == procon_addr) {
@@ -410,11 +459,11 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
-  Serial.printf("HID unmounted: addr=%d instance=%d\n", dev_addr, instance);
+  Serial1.printf("HID unmounted: addr=%d instance=%d\n", dev_addr, instance);
 
   // 切断されたデバイスが、現在接続されているProコントローラーか確認
   if (dev_addr == procon_addr && instance == procon_instance) {
-    Serial.println("Pro Controller disconnected. Resetting state.");
+    Serial1.println("Pro Controller disconnected. Resetting state.");
     is_procon = false;
     procon_addr = 0;
     procon_instance = 0;
@@ -465,12 +514,13 @@ void init_usb_host() {
   pio_cfg.pin_dp = HOST_PIN_DP;
   USBHost.configure_pio_usb(1, &pio_cfg);
   USBHost.begin(1);
-  Serial.println("USB host init done");
+  Serial1.println("USB host init done");
 }
 
 void setup1() {
   // UARTでシリアル通信開始
   Serial.begin(115200);
+  Serial1.begin(115200);
   pixels.begin();
   // 青色LED
   setLEDColor(0, 0, 15);
