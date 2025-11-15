@@ -3,6 +3,11 @@
 #include "DrawPanel.h"
 #include <wx/wx.h>
 
+wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
+	EVT_BUTTON(wxID_ANY, MainFrame::OnConnect)
+	EVT_BUTTON(wxID_ANY, MainFrame::OnRefresh)
+wxEND_EVENT_TABLE()
+
 MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) {
 	//// フレーム上にパネルを作成(thisはMainFrameを指す)
 	//wxPanel* panel = new wxPanel(this);
@@ -14,15 +19,13 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	wxBoxSizer* topSizer = new wxBoxSizer(wxHORIZONTAL);
 	comChoice = new wxChoice(topPanel, wxID_ANY);
 	connectButton = new wxButton(topPanel, wxID_ANY, "Connect");
+	refreshButton = new wxButton(topPanel, wxID_ANY, "Refresh");
 
-	auto ports = SerialUtils::AvailablePorts();
-	for (const auto& port : ports) {
-		wxString choiceLabel = wxString::Format("%s (%s)", port.port, port.description);
-		comChoice->Append(choiceLabel);
-	}
+	RefreshComPorts();
 
 	topSizer->Add(comChoice, 1, wxEXPAND | wxRIGHT);
 	topSizer->Add(connectButton, 0, wxEXPAND);
+	topSizer->Add(refreshButton, 0, wxEXPAND | wxLEFT);
 
 	topPanel->SetSizer(topSizer);
 
@@ -32,6 +35,16 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	this->SetSizer(mainSizer);
 
 	connectButton->Bind(wxEVT_BUTTON, &MainFrame::OnConnect, this);
+	refreshButton->Bind(wxEVT_BUTTON, &MainFrame::OnRefresh, this);
+}
+
+void MainFrame::RefreshComPorts() {
+	comChoice->Clear();
+	auto ports = SerialUtils::AvailablePorts();
+	for (const auto& port : ports) {
+		wxString choiceLabel = wxString::Format("%s (%s)", port.port, port.description);
+		comChoice->Append(choiceLabel);
+	}
 }
 
 void MainFrame::OnConnect(wxCommandEvent& event) {
@@ -51,4 +64,8 @@ void MainFrame::OnConnect(wxCommandEvent& event) {
 	}
 	drawPanel->gamepad.Connect(portName.ToStdString());
 	connectButton->SetLabel("Disconnect");
+}
+
+void MainFrame::OnRefresh(wxCommandEvent& event) {
+	RefreshComPorts();
 }
