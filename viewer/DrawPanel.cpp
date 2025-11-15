@@ -1,5 +1,4 @@
 ﻿#include "DrawPanel.h"
-#include "SerialUtils.h"
 #include <iostream>
 using std::cout;
 using std::endl;
@@ -28,11 +27,6 @@ DrawPanel::DrawPanel(wxWindow* parent) : wxPanel(parent, wxID_ANY) {
 	wxBitmapBundle bundle_bass   = wxBitmapBundle::FromSVGFile(path_bass, wxSize(150, 150));
 	svgBitmapTreble = bundle_treble.GetBitmap(wxSize(300, 300));
 	svgBitmapBass   = bundle_bass.GetBitmap(wxSize(150, 150));
-
-	auto ports = SerialUtils::AvailablePorts();
-	for (const auto& port : ports) {
-		cout << "Port: " << port.port << ", Description: " << port.description << endl;
-	}
 }
 
 void DrawPanel::ClearBackground(wxGCDC& gdc) {
