@@ -5,6 +5,9 @@
 #include "Adafruit_TinyUSB.h"
 #include "tusb.h"
 
+#define HOST_PIN_DP 12  // PIO USB D+ ピン
+Adafruit_USBH_Host USBHost;
+
 // --- 音階データと操作（このファイル内にインライン） ---
 // 目的
 // - 装置固有のノートコード（例: 0x2d）を扱いやすくまとめる。
@@ -72,9 +75,6 @@ namespace Scale {
   }
 }
 // --- end inlined note_map ---
-
-#define HOST_PIN_DP 12  // PIO USB D+ ピン
-Adafruit_USBH_Host USBHost;
 
 // NeoPixel (デバッグ用LED)
 #include <Adafruit_NeoPixel.h>
