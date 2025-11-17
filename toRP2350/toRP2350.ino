@@ -5,6 +5,74 @@
 #include "Adafruit_TinyUSB.h"
 #include "tusb.h"
 
+// --- 音階データと操作（このファイル内にインライン） ---
+// 目的
+// - 装置固有のノートコード（例: 0x2d）を扱いやすくまとめる。
+// - 半音 (+1 / -1) やオクターブ (+12 / -12) 単位で簡単に移調できるようにする。
+//
+// 構成と使い方
+// - enum Scale::Note は「セミトーン順のインデックス」です（列挙子の先頭が最も低い音になります）。
+//   インデックスに対して加減算するだけで移調できます（例: +1 = 半音上、+12 = 1オクターブ上）。
+// - 実際にコントローラへ渡す周波数コード（ペア high/low）は配列 codes[] に格納しています。
+//   インデックス -> デバイスコード は Scale::code(note) で Scale::CodePair を取得します。
+// - 範囲外アクセスは自動で下限/上限へクランプされます。
+//
+// 使用例（CodePair を取り出して rumble に渡す）:
+// {
+//   // C4 を半音上げて振動を送る
+//   auto cp = Scale::code( Scale::transpose(Scale::C4, +1) );
+//   rumble(cp.high, cp.low, amp_high, amp_low);
+// }
+// {
+//   // A4 を 1 オクターブ下げる
+//   auto n = Scale::transpose(Scale::A4, -12);
+//   auto cp = Scale::code(n);
+//   rumble(cp.high, cp.low, amp_high, amp_low);
+// }
+namespace Scale {
+  enum Note : int8_t {
+                                       Gs2, A2, As2, B2,
+    C3, Cs3, D3, Ds3, E3, F3, Fs3, G3, Gs3, A3, As3, B3,
+    C4, Cs4, D4, Ds4, E4, F4, Fs4, G4, Gs4, A4, As4, B4,
+    C5, Cs5, D5, Ds5, E5, F5, Fs5, G5, Gs5, A5, As5, B5,
+    C6, Cs6, D6, Ds6,
+    Silence,
+    COUNT
+  };
+
+  struct CodePair { uint8_t high; uint8_t low; };
+
+  // デフォルト値
+  const int hi_0 = 0x00;
+  const int lo_0 = 0x00;
+  // enum と同じ半音順で並んでいます。
+  static const CodePair codes[COUNT] = {
+                                                                                                            {hi_0,0x2d}, {hi_0,0x30}, {hi_0,0x33}, {hi_0,0x35},
+    {hi_0,0x38}, {hi_0,0x3b}, {hi_0,0x3d}, {hi_0,0x3f}, {hi_0,0x42}, {hi_0,0x45}, {hi_0,0x48}, {hi_0,0x4a}, {hi_0,0x4d}, {hi_0,0x50}, {hi_0,0x52}, {hi_0,0x55},
+    {hi_0,0x58}, {hi_0,0x5a}, {hi_0,0x5d}, {hi_0,0x60}, {hi_0,0x62}, {hi_0,0x65}, {hi_0,0x68}, {hi_0,0x6a}, {hi_0,0x6d}, {hi_0,0x70}, {hi_0,0x72}, {hi_0,0x75},
+    {hi_0,0x78}, {hi_0,0x7a}, {hi_0,0x7d}, {0x7c,lo_0}, {0x88,lo_0}, {0x94,lo_0}, {0x9c,lo_0}, {0xa8,lo_0}, {0xb4,lo_0}, {0xbc,lo_0}, {0xc8,lo_0}, {0xd4,lo_0},
+    {0xdc,lo_0}, {0xe8,lo_0}, {0xf4,lo_0}, {0xfc,lo_0},
+    {hi_0,lo_0}
+  };
+
+  // ノート（enum）から機器固有のコードを取得します（範囲をクランプ）。
+  inline CodePair code(Note n) {
+    int idx = (int)n;
+    if (idx < 0) idx = 0;
+    if (idx >= COUNT) idx = COUNT - 1;
+    return codes[idx];
+  }
+
+  // 半音単位で移調し、テーブル範囲に収めます（下限/上限にクランプ）。
+  inline Note transpose(Note n, int semitones) {
+    int idx = (int)n + semitones;
+    if (idx < 0) idx = 0;
+    if (idx >= COUNT) idx = COUNT - 1;
+    return (Note)idx;
+  }
+}
+// --- end inlined note_map ---
+
 #define HOST_PIN_DP 12  // PIO USB D+ ピン
 Adafruit_USBH_Host USBHost;
 
@@ -250,91 +318,30 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance,
   tuh_hid_receive_report(dev_addr, instance); // 最初の受信開始
 }
 
-// --- 音階データと操作（このファイル内にインライン） ---
-// 目的
-// - 装置固有のノートコード（例: 0x2d）を扱いやすくまとめる。
-// - 半音 (+1 / -1) やオクターブ (+12 / -12) 単位で簡単に移調できるようにする。
-//
-// 構成と使い方
-// - enum Scale::Note は「セミトーン順のインデックス」です（列挙子の先頭が最も低い音になります）。
-//   インデックスに対して加減算するだけで移調できます（例: +1 = 半音上、+12 = 1オクターブ上）。
-// - 実際にコントローラへ渡す周波数コード（ペア high/low）は配列 codes[] に格納しています。
-//   インデックス -> デバイスコード は Scale::code(note) で Scale::CodePair を取得します。
-// - 範囲外アクセスは自動で下限/上限へクランプされます。
-//
-// 使用例（CodePair を取り出して rumble に渡す）:
-// {
-//   // C4 を半音上げて振動を送る
-//   auto cp = Scale::code( Scale::transpose(Scale::C4, +1) );
-//   rumble(cp.high, cp.low, amp_high, amp_low);
-// }
-// {
-//   // A4 を 1 オクターブ下げる
-//   auto n = Scale::transpose(Scale::A4, -12);
-//   auto cp = Scale::code(n);
-//   rumble(cp.high, cp.low, amp_high, amp_low);
-// }
-namespace Scale {
-  enum Note : int8_t {
-                                       Gs2, A2, As2, B2,
-    C3, Cs3, D3, Ds3, E3, F3, Fs3, G3, Gs3, A3, As3, B3,
-    C4, Cs4, D4, Ds4, E4, F4, Fs4, G4, Gs4, A4, As4, B4,
-    C5, Cs5, D5, Ds5, E5, F5, Fs5, G5, Gs5, A5, As5, B5,
-    C6, Cs6, D6, Ds6,
-    Silence,
-    COUNT
-  };
-
-  struct CodePair { uint8_t high; uint8_t low; };
-
-  // デフォルト値
-  const int hi_0 = 0x00;
-  const int lo_0 = 0x00;
-  // enum と同じ半音順で並んでいます。
-  static const CodePair codes[COUNT] = {
-                                                                                                            {hi_0,0x2d}, {hi_0,0x30}, {hi_0,0x33}, {hi_0,0x35},
-    {hi_0,0x38}, {hi_0,0x3b}, {hi_0,0x3d}, {hi_0,0x3f}, {hi_0,0x42}, {hi_0,0x45}, {hi_0,0x48}, {hi_0,0x4a}, {hi_0,0x4d}, {hi_0,0x50}, {hi_0,0x52}, {hi_0,0x55},
-    {hi_0,0x58}, {hi_0,0x5a}, {hi_0,0x5d}, {hi_0,0x60}, {hi_0,0x62}, {hi_0,0x65}, {hi_0,0x68}, {hi_0,0x6a}, {hi_0,0x6d}, {hi_0,0x70}, {hi_0,0x72}, {hi_0,0x75},
-    {hi_0,0x78}, {hi_0,0x7a}, {hi_0,0x7d}, {0x7c,lo_0}, {0x88,lo_0}, {0x94,lo_0}, {0x9c,lo_0}, {0xa8,lo_0}, {0xb4,lo_0}, {0xbc,lo_0}, {0xc8,lo_0}, {0xd4,lo_0},
-    {0xdc,lo_0}, {0xe8,lo_0}, {0xf4,lo_0}, {0xfc,lo_0},
-    {hi_0,lo_0}
-  };
-
-  // ノート（enum）から機器固有のコードを取得します（範囲をクランプ）。
-  inline CodePair code(Note n) {
-    int idx = (int)n;
-    if (idx < 0) idx = 0;
-    if (idx >= COUNT) idx = COUNT - 1;
-    return codes[idx];
-  }
-
-  // 半音単位で移調し、テーブル範囲に収めます（下限/上限にクランプ）。
-  inline Note transpose(Note n, int semitones) {
-    int idx = (int)n + semitones;
-    if (idx < 0) idx = 0;
-    if (idx >= COUNT) idx = COUNT - 1;
-    return (Note)idx;
-  }
-}
-// --- end inlined note_map ---
-
-void rumble(int frequency_high_l, int amplitude_high_l, int frequency_low_l, int amplitude_low_l, int frequency_high_r, int amplitude_high_r, int frequency_low_r, int amplitude_low_r) {
+void rumble(Scale::Note note_l, Scale::Note note_r, int amplitude_high, int amplitude_low) {
   memset(&out_report, 0, sizeof(out_report));
   out_report.command = 0x10;  // Rumble only
   out_report.sequence_counter = seq_counter++ & 0x0F;
 
-  if (frequency_high_l==0x00) amplitude_high_l = 0x01;
-  if (frequency_low_l==0x00) amplitude_low_l = 0x40;
-  if (frequency_high_r==0x00) amplitude_high_r = 0x01;
-  if (frequency_low_r==0x00) amplitude_low_r = 0x40;
+  Scale::CodePair code_l = Scale::code(note_l);
+  int amplitude_high_l = amplitude_high;
+  int amplitude_low_l  = amplitude_low;
+  Scale::CodePair code_r = Scale::code(note_r);
+  int amplitude_high_r = amplitude_high;
+  int amplitude_low_r  = amplitude_low;
 
-  out_report.rumble_l[0] = frequency_high_l;
+  if (code_l.high==0x00) amplitude_high_l = 0x01;
+  if (code_l.low==0x00) amplitude_low_l = 0x40;
+  if (code_r.high==0x00) amplitude_high_r = 0x01;
+  if (code_r.low==0x00) amplitude_low_r = 0x40;
+
+  out_report.rumble_l[0] = code_l.high;
   out_report.rumble_l[1] = amplitude_high_l;
-  out_report.rumble_l[2] = frequency_low_l;
+  out_report.rumble_l[2] = code_l.low;
   out_report.rumble_l[3] = amplitude_low_l;
-  out_report.rumble_r[0] = frequency_high_r;
+  out_report.rumble_r[0] = code_r.high;
   out_report.rumble_r[1] = amplitude_high_r;
-  out_report.rumble_r[2] = frequency_low_r;
+  out_report.rumble_r[2] = code_r.low;
   out_report.rumble_r[3] = amplitude_low_r;
 
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
@@ -400,18 +407,17 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
     else if (report[3] & SwitchPro::Buttons0::Y)  { base = Scale::C5; note_selected = true; }
   }
 
-  Scale::CodePair code;
+  Scale::Note target;
   if (note_selected) {
-    Scale::Note target = Scale::transpose(base, semitone_offset);
-    code = Scale::code(target);
-    // Serial1.printf("note code=(%02x,%02x)", code.high, code.low);
+    target = Scale::transpose(base, semitone_offset);
   } else {
     // ノートボタンが押されていない場合: アイドル振動を送信
-    code = Scale::code(Scale::Silence);
-    // Serial1.printf("idle rumble      ");
+    target = Scale::Silence;
   }
   // Serial1.printf(" amp=(%02x,%02x) offset=%d\r\n", amp_high, amp_low, semitone_offset);
-  rumble(code.high, amp_high, code.low, amp_low, code.high, amp_high, code.low, amp_low);
+  rumble(target, target, amp_high, amp_low);
+
+  Scale::CodePair code = Scale::code(target);
 
   const uint8_t size = 7;
   memset((void*)&controller_data, 0, size);
