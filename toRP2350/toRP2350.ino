@@ -318,7 +318,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance,
   tuh_hid_receive_report(dev_addr, instance); // 最初の受信開始
 }
 
-void rumble(Scale::Note note_l, Scale::Note note_r, int amplitude_high, int amplitude_low) {
+void rumble(Scale::Note note_l, Scale::Note note_r, uint8_t amplitude_high, uint8_t amplitude_low) {
   memset(&out_report, 0, sizeof(out_report));
   out_report.command = 0x10;  // Rumble only
   out_report.sequence_counter = seq_counter++ & 0x0F;
