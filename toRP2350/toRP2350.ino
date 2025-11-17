@@ -318,18 +318,24 @@ namespace Scale {
 }
 // --- end inlined note_map ---
 
-void rumble(int frequency_high, int frequency_low, int amplitude_high, int amplitude_low) {
+void rumble(int frequency_high_l, int amplitude_high_l, int frequency_low_l, int amplitude_low_l, int frequency_high_r, int amplitude_high_r, int frequency_low_r, int amplitude_low_r) {
   memset(&out_report, 0, sizeof(out_report));
   out_report.command = 0x10;  // Rumble only
   out_report.sequence_counter = seq_counter++ & 0x0F;
 
-  if (frequency_high==0x00) amplitude_high = 0x01;
-  if (frequency_low==0x00) amplitude_low = 0x40;
+  if (frequency_high_l==0x00) amplitude_high_l = 0x01;
+  if (frequency_low_l==0x00) amplitude_low_l = 0x40;
+  if (frequency_high_r==0x00) amplitude_high_r = 0x01;
+  if (frequency_low_r==0x00) amplitude_low_r = 0x40;
 
-  out_report.rumble_l[0] = out_report.rumble_r[0] = frequency_high;
-  out_report.rumble_l[1] = out_report.rumble_r[1] = amplitude_high;
-  out_report.rumble_l[2] = out_report.rumble_r[2] = frequency_low;
-  out_report.rumble_l[3] = out_report.rumble_r[3] = amplitude_low;
+  out_report.rumble_l[0] = frequency_high_l;
+  out_report.rumble_l[1] = amplitude_high_l;
+  out_report.rumble_l[2] = frequency_low_l;
+  out_report.rumble_l[3] = amplitude_low_l;
+  out_report.rumble_r[0] = frequency_high_r;
+  out_report.rumble_r[1] = amplitude_high_r;
+  out_report.rumble_r[2] = frequency_low_r;
+  out_report.rumble_r[3] = amplitude_low_r;
 
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
 }
@@ -398,14 +404,14 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
   if (note_selected) {
     Scale::Note target = Scale::transpose(base, semitone_offset);
     code = Scale::code(target);
-    Serial1.printf("note code=(%02x,%02x)", code.high, code.low);
+    // Serial1.printf("note code=(%02x,%02x)", code.high, code.low);
   } else {
     // ノートボタンが押されていない場合: アイドル振動を送信
     code = Scale::code(Scale::Silence);
-    Serial1.printf("idle rumble      ");
+    // Serial1.printf("idle rumble      ");
   }
-  Serial1.printf(" amp=(%02x,%02x) offset=%d\r\n", amp_high, amp_low, semitone_offset);
-  rumble(code.high, code.low, amp_high, amp_low);
+  // Serial1.printf(" amp=(%02x,%02x) offset=%d\r\n", amp_high, amp_low, semitone_offset);
+  rumble(code.high, amp_high, code.low, amp_low, code.high, amp_high, code.low, amp_low);
 
   const uint8_t size = 7;
   memset((void*)&controller_data, 0, size);
