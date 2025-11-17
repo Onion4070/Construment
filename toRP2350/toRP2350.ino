@@ -318,18 +318,24 @@ namespace Scale {
 }
 // --- end inlined note_map ---
 
-void rumble(int frequency_high, int frequency_low, int amplitude_high, int amplitude_low) {
+void rumble(int frequency_high_l, int amplitude_high_l, int frequency_low_l, int amplitude_low_l, int frequency_high_r, int amplitude_high_r, int frequency_low_r, int amplitude_low_r) {
   memset(&out_report, 0, sizeof(out_report));
   out_report.command = 0x10;  // Rumble only
   out_report.sequence_counter = seq_counter++ & 0x0F;
 
-  if (frequency_high==0x00) amplitude_high = 0x01;
-  if (frequency_low==0x00) amplitude_low = 0x40;
+  if (frequency_high_l==0x00) amplitude_high_l = 0x01;
+  if (frequency_low_l==0x00) amplitude_low_l = 0x40;
+  if (frequency_high_r==0x00) amplitude_high_r = 0x01;
+  if (frequency_low_r==0x00) amplitude_low_r = 0x40;
 
-  out_report.rumble_l[0] = out_report.rumble_r[0] = frequency_high;
-  out_report.rumble_l[1] = out_report.rumble_r[1] = amplitude_high;
-  out_report.rumble_l[2] = out_report.rumble_r[2] = frequency_low;
-  out_report.rumble_l[3] = out_report.rumble_r[3] = amplitude_low;
+  out_report.rumble_l[0] = frequency_high_l;
+  out_report.rumble_l[1] = amplitude_high_l;
+  out_report.rumble_l[2] = frequency_low_l;
+  out_report.rumble_l[3] = amplitude_low_l;
+  out_report.rumble_r[0] = frequency_high_r;
+  out_report.rumble_r[1] = amplitude_high_r;
+  out_report.rumble_r[2] = frequency_low_r;
+  out_report.rumble_r[3] = amplitude_low_r;
 
   tuh_hid_send_report(procon_addr, procon_instance, 0, &out_report, 10);
 }
@@ -365,35 +371,46 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
   if (amp_low > 0x7f) amp_low = 0x7f;
 
   // ボタンを基準ノートに割当て
-  Scale::Note base = Scale::C4;
-  bool note_selected = false;
+  Scale::Note base_l = Scale::C4;
+  Scale::Note base_r = Scale::C4;
+  bool note_selected_l = false;
+  bool note_selected_r = false;
 
   // 方向キー (DPAD, report[5])
-  if (report[5] & SwitchPro::Buttons2::DPAD_UP)         { base = Scale::C4; note_selected = true; }
-  else if (report[5] & SwitchPro::Buttons2::DPAD_LEFT)  { base = Scale::D4; note_selected = true; }
-  else if (report[5] & SwitchPro::Buttons2::DPAD_DOWN)  { base = Scale::E4; note_selected = true; }
-  else if (report[5] & SwitchPro::Buttons2::DPAD_RIGHT) { base = Scale::F4; note_selected = true; }
+  if (report[5] & SwitchPro::Buttons2::DPAD_UP)         { base_l = Scale::G4; note_selected_l = true; }
+  else if (report[5] & SwitchPro::Buttons2::DPAD_LEFT)  { base_l = Scale::A4; note_selected_l = true; }
+  else if (report[5] & SwitchPro::Buttons2::DPAD_DOWN)  { base_l = Scale::B4; note_selected_l = true; }
+  else if (report[5] & SwitchPro::Buttons2::DPAD_RIGHT) { base_l = Scale::C5; note_selected_l = true; }
 
   // ABXY ボタン (report[3])
-  if (!note_selected) {
-    if (report[3] & SwitchPro::Buttons0::X)       { base = Scale::G4; note_selected = true; }
-    else if (report[3] & SwitchPro::Buttons0::A)  { base = Scale::A4; note_selected = true; }
-    else if (report[3] & SwitchPro::Buttons0::B)  { base = Scale::B4; note_selected = true; }
-    else if (report[3] & SwitchPro::Buttons0::Y)  { base = Scale::C5; note_selected = true; }
-  }
+  if (report[3] & SwitchPro::Buttons0::X)       { base_r = Scale::G4; note_selected_r = true; }
+  else if (report[3] & SwitchPro::Buttons0::A)  { base_r = Scale::A4; note_selected_r = true; }
+  else if (report[3] & SwitchPro::Buttons0::B)  { base_r = Scale::B4; note_selected_r = true; }
+  else if (report[3] & SwitchPro::Buttons0::Y)  { base_r = Scale::C5; note_selected_r = true; }
 
-  Scale::CodePair code;
-  if (note_selected) {
-    Scale::Note target = Scale::transpose(base, semitone_offset);
-    code = Scale::code(target);
-    Serial.printf("note code=(%02x,%02x)", code.high, code.low);
+  Scale::CodePair code_l;
+  Scale::CodePair code_r;
+  if (note_selected_l) {
+    Scale::Note target = Scale::transpose(base_l, semitone_offset);
+    code_l = Scale::code(target);
+    // Serial.printf("note code=(%02x,%02x)", code_l.high, code_l.low);
   } else {
     // ノートボタンが押されていない場合: アイドル振動を送信
-    code = Scale::code(Scale::Silence);
-    Serial.printf("idle rumble      ");
+    code_l = Scale::code(Scale::Silence);
+    // Serial.printf("idle rumble      ");
   }
-  Serial.printf(" amp=(%02x,%02x) offset=%d\r\n", amp_high, amp_low, semitone_offset);
-  rumble(code.high, code.low, amp_high, amp_low);
+  if (note_selected_r) {
+    Scale::Note target = Scale::transpose(base_r, semitone_offset);
+    code_r = Scale::code(target);
+    // Serial.printf(" note code=(%02x,%02x)", code_r.high, code_r.low);
+  } else {
+    // ノートボタンが押されていない場合: アイドル振動を送信
+    code_r = Scale::code(Scale::Silence);
+    // Serial.printf(" idle rumble      ");
+  }
+  // Serial.printf(" amp=(%02x,%02x) offset=%d\r\n", amp_high, amp_low, semitone_offset);
+  Serial.printf("l_high=(%02x,%02x) l_low=(%02x,%02x) r_high=(%02x,%02x) r_low=(%02x,%02x)\r\n", code_l.high, amp_high, code_l.low, amp_low, code_r.high, amp_high, code_r.low, amp_low);
+  rumble(code_l.high, amp_high, code_l.low, amp_low, code_r.high, amp_high, code_r.low, amp_low);
 
   // 受信があったらタイムスタンプのみ更新する。
   if (is_procon && dev_addr == procon_addr) {
