@@ -465,6 +465,8 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
   Serial.write((uint8_t*)&controller_data, size);
   Serial.write(end_byte);
 
+  if (report[4] & SwitchPro::Buttons1::R3) setDefaultNote(Scale::Silence, Scale::Silence);
+
   // 受信があったらタイムスタンプのみ更新する。
   if (is_procon && dev_addr == procon_addr) {
     last_data_time = millis();
