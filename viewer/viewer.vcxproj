@@ -112,6 +112,7 @@
       <AdditionalIncludeDirectories>C:\asio\include;$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;C:\wxWidgets\include;C:\wxWidgets\include\msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PreprocessorDefinitions>_WIN32_WINNT=0x0A00;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -150,6 +151,7 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="DrawPanel.h" />
     <ClInclude Include="GamePad.h" />
+    <ClInclude Include="globals.h" />
     <ClInclude Include="MainFrame.h" />
     <ClInclude Include="SerialUtils.h" />
   </ItemGroup>
