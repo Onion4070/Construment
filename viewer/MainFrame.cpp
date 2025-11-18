@@ -45,6 +45,7 @@ void MainFrame::RefreshComPorts() {
 		wxString choiceLabel = wxString::Format("%s (%s)", port.port, port.description);
 		comChoice->Append(choiceLabel);
 	}
+	comChoice->SetSelection(0);
 }
 
 void MainFrame::OnConnect(wxCommandEvent& event) {
