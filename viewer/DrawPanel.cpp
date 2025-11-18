@@ -9,7 +9,8 @@ using std::endl;
 wxBEGIN_EVENT_TABLE(DrawPanel, wxPanel)
 	EVT_PAINT(DrawPanel::OnPaint)
 	EVT_TIMER(wxID_ANY, DrawPanel::OnTimer)
-	EVT_CHAR_HOOK(DrawPanel::OnCharHook)
+	EVT_KEY_DOWN(DrawPanel::OnKeyDown)
+	EVT_KEY_UP(DrawPanel::OnKeyUp)
 wxEND_EVENT_TABLE()
 
 // ペン定義
@@ -71,6 +72,62 @@ void DrawPanel::OnCharHook(wxKeyEvent& event) {
 	}
 
 	// 既定の処理に渡す
+	event.Skip();
+}
+
+void DrawPanel::OnKeyDown(wxKeyEvent& event) {
+	int key = event.GetKeyCode();
+	// normalize to upper-case for letters
+	if (key >= 'a' && key <= 'z') key = std::toupper(key);
+
+	// modifiers set on keydown
+	if (key == 'H') { mod_h = true; event.Skip(); return; }
+	if (key == 'J') { mod_j = true; event.Skip(); return; }
+	if (key == 'K') { mod_k = true; event.Skip(); return; }
+	if (key == 'L') { mod_l = true; event.Skip(); return; }
+
+	// Silence
+	if (key == 'S') {
+		if (gamepad.IsConnected()) gamepad.SendDefaultNote(Scale::Silence, Scale::Silence);
+		event.Skip();
+		return;
+	}
+
+	// Note keys A-G
+	Scale::Note base = Scale::Silence;
+	bool isNote = true;
+	switch (key) {
+	case 'A': base = Scale::A4; break;
+	case 'B': base = Scale::B4; break;
+	case 'C': base = Scale::C4; break;
+	case 'D': base = Scale::D4; break;
+	case 'E': base = Scale::E4; break;
+	case 'F': base = Scale::F4; break;
+	case 'G': base = Scale::G4; break;
+	default: isNote = false; break;
+	}
+
+	if (isNote && gamepad.IsConnected()) {
+		int semitoneOffset = 0;
+		if (mod_h) semitoneOffset += -12;
+		if (mod_j) semitoneOffset += -1;
+		if (mod_k) semitoneOffset += +1;
+		if (mod_l) semitoneOffset += +12;
+
+		Scale::Note target = Scale::transpose(base, semitoneOffset);
+		gamepad.SendDefaultNote(target, target);
+	}
+
+	event.Skip();
+}
+
+void DrawPanel::OnKeyUp(wxKeyEvent& event) {
+	int key = event.GetKeyCode();
+	if (key >= 'a' && key <= 'z') key = std::toupper(key);
+	if (key == 'H') { mod_h = false; }
+	if (key == 'J') { mod_j = false; }
+	if (key == 'K') { mod_k = false; }
+	if (key == 'L') { mod_l = false; }
 	event.Skip();
 }
 
