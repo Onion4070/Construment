@@ -360,6 +360,14 @@ struct ControllerData {
 #pragma pack(pop)
 
 int amp_high = 0x7f, amp_low = 0x60;
+Scale::Note default_note_l = Scale::Silence;
+Scale::Note default_note_r = Scale::Silence;
+
+void setDefaultNote(Scale::Note note_l, Scale::Note note_r) {
+  default_note_l = note_l;
+  default_note_r = note_r;
+}
+
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
                                 uint8_t const* report, uint16_t len) {
   if (len == 0) return;
@@ -407,17 +415,18 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance,
     else if (report[3] & SwitchPro::Buttons0::Y)  { base = Scale::C5; note_selected = true; }
   }
 
-  Scale::Note target;
+  Scale::Note target_l, target_r;
   if (note_selected) {
-    target = Scale::transpose(base, semitone_offset);
+    target_l = target_r = Scale::transpose(base, semitone_offset);
   } else {
-    // ノートボタンが押されていない場合: アイドル振動を送信
-    target = Scale::Silence;
+    // ノートボタンが押されていない場合: デフォルト振動を送信
+    target_l = default_note_l;
+    target_r = default_note_r;
   }
   // Serial1.printf(" amp=(%02x,%02x) offset=%d\r\n", amp_high, amp_low, semitone_offset);
-  rumble(target, target, amp_high, amp_low);
+  rumble(target_l, target_r, amp_high, amp_low);
 
-  Scale::CodePair code = Scale::code(target);
+  Scale::CodePair code = Scale::code(target_l);
 
   const uint8_t size = 7;
   memset((void*)&controller_data, 0, size);
