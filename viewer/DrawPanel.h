@@ -3,6 +3,7 @@
 #include <wx/dcbuffer.h>
 #include <wx/dcgraph.h>
 #include "GamePad.h"
+#include "Scale.h"
 
 // 描画用パネル
 class DrawPanel : public wxPanel
@@ -33,6 +34,14 @@ private:
 	bool mod_j = false; // semitone down
 	bool mod_k = false; // semitone up
 	bool mod_l = false; // octave up
+
+	// which side to update
+	bool mod_n = false; // update left when true
+	bool mod_m = false; // update right when true
+
+	// current default notes (maintained on viewer side so we can update one side)
+	Scale::Note current_left = Scale::Silence;
+	Scale::Note current_right = Scale::Silence;
 
 	// イベントテーブル宣言
 	wxDECLARE_EVENT_TABLE();

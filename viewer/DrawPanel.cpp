@@ -85,10 +85,15 @@ void DrawPanel::OnKeyDown(wxKeyEvent& event) {
 	if (key == 'J') { mod_j = true; event.Skip(); return; }
 	if (key == 'K') { mod_k = true; event.Skip(); return; }
 	if (key == 'L') { mod_l = true; event.Skip(); return; }
+	if (key == 'N') { mod_n = true; event.Skip(); return; }
+	if (key == 'M') { mod_m = true; event.Skip(); return; }
 
-	// Silence
+	// Silence: update left/right depending on modifiers
 	if (key == 'S') {
-		if (gamepad.IsConnected()) gamepad.SendDefaultNote(Scale::Silence, Scale::Silence);
+		if (mod_n) current_left = Scale::Silence;
+		if (mod_m) current_right = Scale::Silence;
+		if (!mod_n && !mod_m) { current_left = Scale::Silence; current_right = Scale::Silence; }
+		if (gamepad.IsConnected()) gamepad.SendDefaultNote(current_left, current_right);
 		event.Skip();
 		return;
 	}
@@ -115,7 +120,11 @@ void DrawPanel::OnKeyDown(wxKeyEvent& event) {
 		if (mod_l) semitoneOffset += +12;
 
 		Scale::Note target = Scale::transpose(base, semitoneOffset);
-		gamepad.SendDefaultNote(target, target);
+		if (mod_n) current_left = target;
+		if (mod_m) current_right = target;
+		if (!mod_n && !mod_m) { current_left = target; current_right = target; }
+
+		gamepad.SendDefaultNote(current_left, current_right);
 	}
 
 	event.Skip();
@@ -128,6 +137,8 @@ void DrawPanel::OnKeyUp(wxKeyEvent& event) {
 	if (key == 'J') { mod_j = false; }
 	if (key == 'K') { mod_k = false; }
 	if (key == 'L') { mod_l = false; }
+	if (key == 'N') { mod_n = false; }
+	if (key == 'M') { mod_m = false; }
 	event.Skip();
 }
 
@@ -179,5 +190,5 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 
 	auto gamepad_state = gamepad.GetGamePad();
 	if (gamepad_state.empty() || !gamepad.IsConnected()) return;
-	cout << (int)gamepad_state[3] << endl;
+	// cout << (int)gamepad_state[3] << endl;
 }
