@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include "GamePad.h"
+#include "Scale.h"
 
 using std::cout;
 using std::cerr;
@@ -98,4 +99,34 @@ void GamePad::ReadLoop() {
 std::vector<uint8_t> GamePad::GetGamePad() {
 	std::lock_guard<std::mutex> lock(mtx);
 	return gamepad;
+}
+
+void GamePad::SendDefaultNote(Scale::Note note_l, Scale::Note note_r) {
+	if (!connected) {
+		cout << "Not connected, cannot send default note." << endl;
+		return;
+	}
+
+	// Build packet: start, size, cmd, note_l, note_r, end
+	const uint8_t start_byte = 0xAA;
+	const uint8_t end_byte = 0xBB;
+	const uint8_t cmd_set_default = 0x01;
+	const uint8_t payload_size = 3; // cmd + note_l + note_r
+
+	uint8_t packet[6];
+	packet[0] = start_byte;
+	packet[1] = payload_size;
+	packet[2] = cmd_set_default;
+	packet[3] = static_cast<uint8_t>(note_l);
+	packet[4] = static_cast<uint8_t>(note_r);
+	packet[5] = end_byte;
+
+	try {
+		// Write synchronously to serial port
+		asio::write(serial, asio::buffer(packet, sizeof(packet)));
+		cout << "Sent SendDefaultNote packet: " << std::hex << (int)packet[2] << " " << (int)packet[3] << " " << (int)packet[4] << std::dec << endl;
+	}
+	catch (const std::exception& e) {
+		cout << "Error sending default note: " << e.what() << endl;
+	}
 }

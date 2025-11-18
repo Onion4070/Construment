@@ -528,6 +528,76 @@ void loop() {
 
 }
 
+// Serial packet parser for commands from viewer
+// Packet format expected from viewer:
+// [0xAA][size=3][cmd=0x01][note_l][note_r][0xBB]
+
+void processSerialCommands() {
+  static enum { ST_WAIT_START, ST_READ_SIZE, ST_READ_PAYLOAD, ST_READ_END } state = ST_WAIT_START;
+  static uint8_t size = 0;
+  static uint8_t payload[16];
+  static uint8_t payload_pos = 0;
+
+  while (Serial.available() > 0) {
+    int ib = Serial.read();
+    if (ib < 0) break;
+    uint8_t b = (uint8_t)ib;
+
+    switch (state) {
+      case ST_WAIT_START:
+        if (b == 0xAA) {
+          state = ST_READ_SIZE;
+        }
+        break;
+
+      case ST_READ_SIZE:
+        size = b;
+        if (size == 0 || size > sizeof(payload)) {
+          // invalid size, reset
+          state = ST_WAIT_START;
+        } else {
+          payload_pos = 0;
+          state = ST_READ_PAYLOAD;
+        }
+        break;
+
+      case ST_READ_PAYLOAD:
+        payload[payload_pos++] = b;
+        if (payload_pos >= size) {
+          state = ST_READ_END;
+        }
+        break;
+
+      case ST_READ_END:
+        if (b == 0xBB) {
+          // process payload
+          if (size >= 3) {
+            uint8_t cmd = payload[0];
+            if (cmd == 0x01) { // SET_DEFAULT_NOTE
+              uint8_t nl = payload[1];
+              uint8_t nr = payload[2];
+              // clamp to valid range just in case
+              if (nl >= (uint8_t)Scale::COUNT) nl = (uint8_t)Scale::Silence;
+              if (nr >= (uint8_t)Scale::COUNT) nr = (uint8_t)Scale::Silence;
+              setDefaultNote((Scale::Note)nl, (Scale::Note)nr);
+              Serial1.printf("setDefaultNote from serial: %d,%d\r\n", nl, nr);
+            }
+          }
+        }
+        // reset state regardless of end byte validity
+        state = ST_WAIT_START;
+        break;
+    }
+  }
+}
+
+void loop() {
+  // handle serial commands from viewer
+  processSerialCommands();
+  // keep CPU light
+  delay(1);
+}
+
 // ====== Core1: Process USB Host ======
 
 void init_usb_host() {

@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <asio.hpp>
 #include <wx/wx.h>
+#include "Scale.h"
 
 class GamePad
 {
@@ -12,6 +13,11 @@ public:
 	void Connect(const std::string& portName);
 	void Disconnect();
 	bool IsConnected() const { return connected; }
+
+	// Send default-note command to the device. The packet format is:
+	// [start=0xAA][size=3][cmd=0x01][note_l][note_r][end=0xBB]
+	// note_l / note_r are values from Scale::Note (stored as uint8_t).
+	void SendDefaultNote(Scale::Note note_l, Scale::Note note_r);
 
 private:
 	void ReadLoop();

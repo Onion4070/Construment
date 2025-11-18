@@ -2,11 +2,14 @@
 #include <iostream>
 using std::cout;
 using std::endl;
+#include "Scale.h"
+#include <cctype>
 
 // イベントテーブル定義
 wxBEGIN_EVENT_TABLE(DrawPanel, wxPanel)
 	EVT_PAINT(DrawPanel::OnPaint)
 	EVT_TIMER(wxID_ANY, DrawPanel::OnTimer)
+	EVT_CHAR_HOOK(DrawPanel::OnCharHook)
 wxEND_EVENT_TABLE()
 
 // ペン定義
@@ -33,6 +36,42 @@ DrawPanel::DrawPanel(wxWindow* parent)
 	svgBitmapBass   = bundle_bass.GetBitmap(wxSize(150, 150));
 
 	refresh_timer.Start(8);
+
+	// パネルがキー入力を受け取れるようにフォーカスを要求
+	this->SetFocus();
+}
+
+void DrawPanel::OnCharHook(wxKeyEvent& event) {
+	int key = event.GetKeyCode();
+	// only handle ASCII letters
+	if (key >= 'A' && key <= 'Z') {
+		key = std::toupper(key);
+	} else if (key >= 'a' && key <= 'z') {
+		key = std::toupper(key);
+	}
+
+	Scale::Note note = Scale::Silence;
+	bool handled = true;
+	switch (key) {
+	case 'A': note = Scale::A4; break;
+	case 'B': note = Scale::B4; break;
+	case 'C': note = Scale::C4; break;
+	case 'D': note = Scale::D4; break;
+	case 'E': note = Scale::E4; break;
+	case 'F': note = Scale::F4; break;
+	case 'G': note = Scale::G4; break;
+	default:
+		handled = false;
+		break;
+	}
+
+	if (handled && gamepad.IsConnected()) {
+		// 同じ音を左右に送る
+		gamepad.SendDefaultNote(note, note);
+	}
+
+	// 既定の処理に渡す
+	event.Skip();
 }
 
 void DrawPanel::ClearBackground(wxGCDC& gdc) {
