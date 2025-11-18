@@ -3,6 +3,7 @@
 
 #include <wx/wx.h>
 #include "DrawPanel.h"
+#include "globals.h"
 
 class MainFrame : public wxFrame
 {

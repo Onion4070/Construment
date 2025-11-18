@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <iostream>
 #include <iomanip>
 #include "GamePad.h"
 #include "Scale.h"

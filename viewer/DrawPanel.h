@@ -4,6 +4,7 @@
 #include <wx/dcgraph.h>
 #include "GamePad.h"
 #include "Scale.h"
+#include "globals.h"
 
 // 描画用パネル
 class DrawPanel : public wxPanel

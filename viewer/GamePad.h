@@ -2,6 +2,7 @@
 #include <asio.hpp>
 #include <wx/wx.h>
 #include "Scale.h"
+#include "globals.h"
 
 class GamePad
 {
