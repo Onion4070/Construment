@@ -3,10 +3,6 @@
 #include "GamePad.h"
 #include "Scale.h"
 
-using std::cout;
-using std::cerr;
-using std::endl;
-
 GamePad::GamePad() : serial(io){
 	
 }
