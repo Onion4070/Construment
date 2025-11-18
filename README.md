@@ -46,6 +46,7 @@ RP2350ボードに搭載された内蔵NeoPixelは、動作状態を色でわか
 ### 前提条件
 - Visual Studio 2022（C++ ワークロード）をインストールしていること
 - wxWidgets がインストール済みで、MSVC 向けにビルドされていること（例: `C:\wxWidgets`）。`lib\vc_x64_lib` に `.lib` が存在することを確認してください。
+- asio C++ Library (non-boost) をインストールしていること（例:  `C:\asio`）
 
 ### 手順
 1. `Construment\viewer` フォルダへ移動します:
