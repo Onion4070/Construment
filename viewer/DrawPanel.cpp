@@ -102,13 +102,13 @@ void DrawPanel::OnKeyDown(wxKeyEvent& event) {
 	Scale::Note base = Scale::Silence;
 	bool isNote = true;
 	switch (key) {
-	case 'A': base = Scale::A4; break;
-	case 'B': base = Scale::B4; break;
 	case 'C': base = Scale::C4; break;
 	case 'D': base = Scale::D4; break;
 	case 'E': base = Scale::E4; break;
 	case 'F': base = Scale::F4; break;
 	case 'G': base = Scale::G4; break;
+	case 'A': base = Scale::A4; break;
+	case 'B': base = Scale::B4; break;
 	default: isNote = false; break;
 	}
 
