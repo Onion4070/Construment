@@ -521,12 +521,10 @@ struct repeating_timer timer;
 // ====== Core 0: main logic ======
 
 void setup() {
-
 }
 
-void loop() {
-
-}
+// void loop() {
+// }
 
 // Serial packet parser for commands from viewer
 // Packet format expected from viewer:
