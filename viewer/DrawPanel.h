@@ -12,8 +12,6 @@ public:
 	DrawPanel(wxWindow* parent);
 	GamePad gamepad;
 
-	// キー入力ハンドラ（A-G を拾って RP 側へ送信する）
-	void OnCharHook(wxKeyEvent& event);
 	// KeyDown/KeyUp を使って modifier の押下状態を管理
 	void OnKeyDown(wxKeyEvent& event);
 	void OnKeyUp(wxKeyEvent& event);

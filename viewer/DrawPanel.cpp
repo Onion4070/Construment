@@ -42,39 +42,7 @@ DrawPanel::DrawPanel(wxWindow* parent)
 	this->SetFocus();
 }
 
-void DrawPanel::OnCharHook(wxKeyEvent& event) {
-	int key = event.GetKeyCode();
-	// only handle ASCII letters
-	if (key >= 'A' && key <= 'Z') {
-		key = std::toupper(key);
-	} else if (key >= 'a' && key <= 'z') {
-		key = std::toupper(key);
-	}
-
-	Scale::Note note = Scale::Silence;
-	bool handled = true;
-	switch (key) {
-	case 'A': note = Scale::A4; break;
-	case 'B': note = Scale::B4; break;
-	case 'C': note = Scale::C4; break;
-	case 'D': note = Scale::D4; break;
-	case 'E': note = Scale::E4; break;
-	case 'F': note = Scale::F4; break;
-	case 'G': note = Scale::G4; break;
-	default:
-		handled = false;
-		break;
-	}
-
-	if (handled && gamepad.IsConnected()) {
-		// 同じ音を左右に送る
-		gamepad.SendDefaultNote(note, note);
-	}
-
-	// 既定の処理に渡す
-	event.Skip();
-}
-
+// キー押下イベントハンドラ
 void DrawPanel::OnKeyDown(wxKeyEvent& event) {
 	int key = event.GetKeyCode();
 	// normalize to upper-case for letters
@@ -130,6 +98,7 @@ void DrawPanel::OnKeyDown(wxKeyEvent& event) {
 	event.Skip();
 }
 
+// キー解放イベントハンドラ
 void DrawPanel::OnKeyUp(wxKeyEvent& event) {
 	int key = event.GetKeyCode();
 	if (key >= 'a' && key <= 'z') key = std::toupper(key);
