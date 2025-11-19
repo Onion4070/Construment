@@ -189,6 +189,37 @@ void DrawPanel::Draw(wxGCDC* gdc, std::vector<std::pair<Scale::Note, std::pair<s
 		int cy = staffOffset + baseY + noteHeight[noteIndex];
 
 		int cx = baseX + spacing * (i - start);
+
+		// draw ledger (補助線) behind the note (円の後ろに見えるように、円描画前に描画)
+		wxPen oldPen = gdc->GetPen();
+		wxPen ledgerPen(*wxBLACK, 3, wxPENSTYLE_SOLID);
+		gdc->SetPen(ledgerPen);
+
+		switch (note) {
+			case Scale::C4: case Scale::Cs4: {
+				// 円の幅に合わせた短い水平線を描画する（中心y = cy）
+				int halfLen = radius + 8; // 線の半分の長さ（必要なら調整可）
+				gdc->DrawLine(cx - halfLen, cy, cx + halfLen, cy);
+				break;
+			}
+			case Scale::A5: case Scale::As5:
+			case Scale::B5:
+			case Scale::C6: case Scale::Cs6: {
+				int halfLen = radius + 8;
+				int a5y = staffOffset + baseY + noteHeight[(int)Scale::A5];
+				gdc->DrawLine(cx - halfLen, a5y, cx + halfLen, a5y);
+				if (note==Scale::C6 || note==Scale::Cs6) {
+					int c6y = staffOffset + baseY + noteHeight[(int)Scale::C6];
+					gdc->DrawLine(cx - halfLen, c6y, cx + halfLen, c6y);
+				}
+				break;
+			}
+			default:
+				break;
+		}
+
+		// restore previous pen and draw the note circle so it appears above the ledger line
+		gdc->SetPen(oldPen);
 		gdc->DrawCircle(cx, cy, radius);
 
 		int tw, th;
