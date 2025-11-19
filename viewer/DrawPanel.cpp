@@ -28,9 +28,9 @@ DrawPanel::DrawPanel(wxWindow* parent)
 	wxString path_treble = wxT("assets/treble.svg");
 	wxString path_bass   = wxT("assets/bass.svg");
 	
-	wxBitmapBundle bundle_treble = wxBitmapBundle::FromSVGFile(path_treble, wxSize(300, 300));
+	wxBitmapBundle bundle_treble = wxBitmapBundle::FromSVGFile(path_treble, wxSize(330, 330));
 	wxBitmapBundle bundle_bass   = wxBitmapBundle::FromSVGFile(path_bass, wxSize(150, 150));
-	svgBitmapTreble = bundle_treble.GetBitmap(wxSize(300, 300));
+	svgBitmapTreble = bundle_treble.GetBitmap(wxSize(330, 330));
 	svgBitmapBass   = bundle_bass.GetBitmap(wxSize(150, 150));
 
 	refresh_timer.Start(8);
@@ -119,7 +119,7 @@ void DrawPanel::OnTimer(wxTimerEvent& event) {
 }
 
 // 五線の描画(上下同時に描画)
-void DrawPanel::DrawScoreLine(wxGCDC& gdc, int width = 50, int offset = 50) {
+void DrawPanel::DrawScoreLine(wxGCDC& gdc, int width = 50, int offset = 150) {
 	gdc.SetPen(blackPen);
 	for (int i = 0; i < 11; i++) {
 		if (i == 5) continue; // 上下の五線の間の線は描画しない
@@ -171,7 +171,7 @@ void DrawPanel::Draw(wxGCDC* gdc, std::vector<std::pair<Scale::Note, std::pair<s
 	int start = total - drawCount;
 	if (start < 0) start = 0;
 
-	const int staffOffset = 50;   // same as DrawScoreLine default offset
+	const int staffOffset = 150;  // same as DrawScoreLine default offset
 	const int staffSpacing = 50;  // same as DrawScoreLine default width (line spacing)
 
 	for (int i = start; i < total; i++) {
@@ -241,18 +241,16 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	wxAutoBufferedPaintDC dc(this);
 	wxGCDC gdc(dc);
 	ClearBackground(gdc);
-	// 背景のクリアは元の座標系で行いたいため、ClearBackground の後にデバイス原点を移動する
-	gdc.SetDeviceOrigin(0, 100);
 	DrawScoreLine(gdc);
 
-	gdc.DrawBitmap(svgBitmapTreble, 50, 20, true); // ト音記号
-	gdc.DrawBitmap(svgBitmapBass, 50, 350, true); // ヘ音記号
+	gdc.DrawBitmap(svgBitmapTreble, 50, 98, true); // ト音記号
+	gdc.DrawBitmap(svgBitmapBass, 50, 450, true);  // ヘ音記号
 
 	// テキスト描画
 	wxFont font(75, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
 	gdc.SetFont(font);
 	wxString info = wxString::Format("Vol. %d", GetSize().GetWidth()); // 仮
-	gdc.DrawText(info, GetSize().GetHeight()/2, 550); // テキスト描画
+	gdc.DrawText(info, GetSize().GetHeight()/2, 650); // テキスト描画
 
 	//std::vector<std::pair<uint8_t, std::string>> buf;
 	//buf.push_back({ 0x60, "A" });
