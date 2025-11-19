@@ -3,6 +3,33 @@
 #include "GamePad.h"
 #include "Scale.h"
 
+namespace SwitchPro {
+	namespace Buttons0 {
+		static constexpr uint8_t Y = 0x01;
+		static constexpr uint8_t X = 0x02;
+		static constexpr uint8_t B = 0x04;
+		static constexpr uint8_t A = 0x08;
+		static constexpr uint8_t R = 0x40;
+		static constexpr uint8_t ZR = 0x80;
+	}
+	namespace Buttons1 {
+		static constexpr uint8_t MINUS = 0x01;
+		static constexpr uint8_t PLUS = 0x02;
+		static constexpr uint8_t R3 = 0x04;
+		static constexpr uint8_t L3 = 0x08;
+		static constexpr uint8_t HOME = 0x10;
+		static constexpr uint8_t CAPTURE = 0x20;
+	}
+	namespace Buttons2 {
+		static constexpr uint8_t DPAD_DOWN = 0x01;
+		static constexpr uint8_t DPAD_UP = 0x02;
+		static constexpr uint8_t DPAD_RIGHT = 0x04;
+		static constexpr uint8_t DPAD_LEFT = 0x08;
+		static constexpr uint8_t L = 0x40;
+		static constexpr uint8_t ZL = 0x80;
+	}
+}
+
 GamePad::GamePad() : serial(io){
 	
 }
@@ -94,6 +121,48 @@ void GamePad::ReadLoop() {
 std::vector<uint8_t> GamePad::GetGamePad() {
 	std::lock_guard<std::mutex> lock(mtx);
 	return gamepad;
+}
+
+void GamePad::Update() {
+	std::lock_guard<std::mutex> lock(mtx);
+	prev = curr;
+	curr[0] = gamepad[0];
+	curr[1] = gamepad[1];
+	curr[2] = gamepad[2];
+}
+
+std::vector<uint8_t> GamePad::DetectButtonEdge() {
+	std::vector<uint8_t> diff(3);
+	for (int i = 0; i < 3; i++) {
+		diff[i] = (prev[i] ^ curr[i]) & curr[i];
+	}
+	return diff;
+}
+
+std::vector<std::string> GamePad::GetInputStream() {
+	auto diff = DetectButtonEdge();
+	if (diff[0] & SwitchPro::Buttons0::A)  input_stream.push_back("A");
+	if (diff[0] & SwitchPro::Buttons0::B)  input_stream.push_back("B");
+	if (diff[0] & SwitchPro::Buttons0::X)  input_stream.push_back("X");
+	if (diff[0] & SwitchPro::Buttons0::Y)  input_stream.push_back("Y");
+	if (diff[0] & SwitchPro::Buttons0::R)  input_stream.push_back("R");
+	if (diff[0] & SwitchPro::Buttons0::ZR) input_stream.push_back("ZR");
+
+	if (diff[1] & SwitchPro::Buttons1::MINUS)   input_stream.push_back("MINUS");
+	if (diff[1] & SwitchPro::Buttons1::PLUS)    input_stream.push_back("PLUS");
+	if (diff[1] & SwitchPro::Buttons1::R3)      input_stream.push_back("R3");
+	if (diff[1] & SwitchPro::Buttons1::L3)      input_stream.push_back("L3");
+	if (diff[1] & SwitchPro::Buttons1::HOME)    input_stream.push_back("HOME");
+	if (diff[1] & SwitchPro::Buttons1::CAPTURE) input_stream.push_back("CAPTURE");
+
+	if (diff[2] & SwitchPro::Buttons2::DPAD_DOWN)  input_stream.push_back("DPAD_DOWN");
+	if (diff[2] & SwitchPro::Buttons2::DPAD_UP)    input_stream.push_back("DPAD_UP");
+	if (diff[2] & SwitchPro::Buttons2::DPAD_RIGHT) input_stream.push_back("DPAD_RIGHT");
+	if (diff[2] & SwitchPro::Buttons2::DPAD_LEFT)  input_stream.push_back("DPAD_LEFT");
+	if (diff[2] & SwitchPro::Buttons2::L)  input_stream.push_back("L");
+	if (diff[2] & SwitchPro::Buttons2::ZL) input_stream.push_back("ZL");
+
+	return input_stream;
 }
 
 void GamePad::SendDefaultNote(Scale::Note note_l, Scale::Note note_r) {

@@ -120,9 +120,67 @@ void DrawPanel::OnTimer(wxTimerEvent& event) {
 
 // 五線の描画(上下同時に描画)
 void DrawPanel::DrawScoreLine(wxGCDC& gdc, int width = 50, int offset = 50) {
+	gdc.SetPen(blackPen);
 	for (int i = 0; i < 11; i++) {
 		if (i == 5) continue; // 上下の五線の間の線は描画しない
 		gdc.DrawLine(0, offset + width*i, this->GetSize().GetWidth(), offset + width*i);
+	}
+}
+
+//void DrawPanel::DrawNote(wxGCDC* gdc, std::vector<std::pair<uint8_t, std::string>>& notes) {
+//	wxPen buttonPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
+//	gdc->SetPen(buttonPen);
+//
+//	const int baseX = 300;
+//	const int baseY = 100;
+//	const int spacing = 80;
+//	const int radius = 25;
+//
+//	for (int i = 0; i < notes.size(); i++) {
+//		auto [scale, button] = notes[i];
+//
+//		int fontSize = 30;
+//		wxFont noteFont(fontSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
+//		gdc->SetFont(noteFont);
+//
+//		int cx = baseX + spacing * i;
+//		int cy = baseY;
+//		gdc->DrawCircle(cx, cy, radius);
+//
+//		int tw, th;
+//		gdc, GetTextExtent(button, &tw, &th);
+//		int tx = cx - tw / 2;
+//		int ty = cy - th / 2;
+//		gdc->DrawText(button, tx, ty);
+//	}
+//}
+
+
+void DrawPanel::Draw(wxGCDC* gdc, std::vector<std::string>& notes) {
+	wxPen buttonPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
+	gdc->SetPen(buttonPen);
+
+	const int baseX = 300;
+	const int baseY = 100;
+	const int spacing = 80;
+	const int radius = 25;
+
+	for (int i = 0; i < notes.size(); i++) {
+		auto button = notes[i];
+
+		int fontSize = 30;
+		wxFont noteFont(fontSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
+		gdc->SetFont(noteFont);
+
+		int cx = baseX + spacing * i;
+		int cy = baseY;
+		gdc->DrawCircle(cx, cy, radius);
+
+		int tw, th;
+		gdc->GetTextExtent(button, &tw, &th);
+		int tx = cx - tw / 2;
+		int ty = cy - th / 2;
+		gdc->DrawText(button, tx, ty);
 	}
 }
 
@@ -130,20 +188,7 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	wxAutoBufferedPaintDC dc(this);
 	wxGCDC gdc(dc);
 	ClearBackground(gdc);
-
-	gdc.SetPen(blackPen);
 	DrawScoreLine(gdc);
-
-	gdc.DrawCircle(300, 100, 50); // 中心(300, 100), 半径50の円を描画
-
-	// 正八角形を描画
-	gdc.SetPen(anyColorPen);
-	wxPoint points[8];
-	for (int i = 0; i < 8; i++) {
-		double angle = i * (2 * 3.14159 / 8); // 角度を計算
-		points[i] = wxPoint(500 + 50 * cos(angle), 100 + 50 * sin(angle)); // 中心(500, 100), 半径50
-	}
-	gdc.DrawPolygon(8, points);
 
 	gdc.DrawBitmap(svgBitmapTreble, 50, 20, true); // ト音記号
 	gdc.DrawBitmap(svgBitmapBass, 50, 350, true); // ヘ音記号
@@ -154,7 +199,16 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	wxString info = wxString::Format("Vol. %d", GetSize().GetWidth()); // 仮
 	gdc.DrawText(info, GetSize().GetHeight()/2, 550); // テキスト描画
 
+	//std::vector<std::pair<uint8_t, std::string>> buf;
+	//buf.push_back({ 0x60, "A" });
+	//buf.push_back({ 0x70, "B" });
+	//buf.push_back({ 0x80, "X" });
+	//buf.push_back({ 0x90, "Y" });
+
+
 	auto gamepad_state = gamepad.GetGamePad();
-	if (gamepad_state.empty() || !gamepad.IsConnected()) return;
-	// cout << (int)gamepad_state[3] << endl;
+	if (gamepad_state.size() < 3 || !gamepad.IsConnected()) return;
+	gamepad.Update();
+	auto buf = gamepad.GetInputStream();
+	Draw(&gdc, buf);
 }
