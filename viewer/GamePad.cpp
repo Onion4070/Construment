@@ -40,7 +40,7 @@ GamePad::~GamePad() {
 
 void GamePad::Connect(const std::string& portName) {
 	if (connected.load()) {
-		cout << "Already connected." << endl;
+		std::cout << "Already connected." << std::endl;
 		return;
 	}
 
@@ -59,10 +59,10 @@ void GamePad::Connect(const std::string& portName) {
 		});
 
 		connected.store(true);
-		cout << "Connected to " << portName << endl;
+		std::cout << "Connected to " << portName << std::endl;
 	}
 	catch (std::exception& e) {
-		cout << "Error connecting to " << portName << ": " << e.what() << endl;
+		std::cout << "Error connecting to " << portName << ": " << e.what() << std::endl;
 		connected.store(false);
 	}
 }
@@ -77,10 +77,10 @@ void GamePad::Disconnect() {
 			ioThread.join();
 		}
 		connected.store(false);
-		cout << "Disconnected." << endl;
+		std::cout << "Disconnected." << std::endl;
 	}
 	catch (std::exception& e) {
-		cout << "Error during disconnect: " << e.what() << endl;
+		std::cout << "Error during disconnect: " << e.what() << std::endl;
 	}
 }
 
@@ -89,7 +89,7 @@ void GamePad::ReadLoop() {
 		try {
 			uint8_t current_byte;
 			asio::read(serial, asio::buffer(&current_byte, 1));
-			if (current_byte != start_byte) continue;
+			if (current_byte != START_BYTE) continue;
 
 			uint8_t size;
 			asio::read(serial, asio::buffer(&size, 1));
@@ -99,17 +99,17 @@ void GamePad::ReadLoop() {
 			asio::read(serial, asio::buffer(&current_byte, 1));
 
 			if (current_byte != END_BYTE) {
-				cerr << "Invalid end byte" << endl;
+				std::cerr << "Invalid end byte" << std::endl;
 				continue;
 			}
 
 			//for (int i = 0; i < size; i++) {
-			//	cout << std::hex << std::setfill('0') << std::setw(2) << (int)controller_data[i] << " ";
+			//	std::cout << std::hex << std::setfill('0') << std::setw(2) << (int)controller_data[i] << " ";
 			//}
-			//cout << endl;
+			//std::cout << std::endl;
 
 			if (controller_data.size() < 3) {
-				cerr << "Controller data too small: " << controller_data.size() << endl;
+				std::cerr << "Controller data too small: " << controller_data.size() << std::endl;
 				continue;
 			}
 
@@ -119,7 +119,7 @@ void GamePad::ReadLoop() {
 			gamepad[2] = controller_data[2];
 		}
 		catch (std::exception& e) {
-			cerr << "Serial port read error" << e.what() << endl;
+			std::cerr << "Serial port read error" << e.what() << std::endl;
 			connected.store(false);
 		}
 	}
@@ -232,7 +232,7 @@ std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GamePad
 
 void GamePad::SendDefaultNote(Scale::Note note_l, Scale::Note note_r) {
 	if (!connected.load()) {
-		cout << "Not connected, cannot send default note." << endl;
+		std::cout << "Not connected, cannot send default note." << std::endl;
 		return;
 	}
 	// Build packet: START_BYTE, size, cmd, note_l, note_r, END_BYTE
