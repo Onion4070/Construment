@@ -207,7 +207,7 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 
 
 	auto gamepad_state = gamepad.GetGamePad();
-	if (gamepad_state.size() < 3 || !gamepad.IsConnected()) return;
+	if (!gamepad.IsConnected()) return;
 	gamepad.Update();
 	auto buf = gamepad.GetInputStream();
 	Draw(&gdc, buf);

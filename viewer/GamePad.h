@@ -9,10 +9,10 @@ class GamePad
 public:
 	GamePad();
 	~GamePad();
-	std::vector<uint8_t> GetGamePad();
+	std::array<uint8_t, 3> GetGamePad();
 	void Update();
 	std::vector<std::string> GetInputStream();
-	std::vector<uint8_t> DetectButtonEdge();
+	std::array<uint8_t, 3> DetectButtonEdge();
 
 	void Connect(const std::string& portName);
 	void Disconnect();
@@ -33,11 +33,11 @@ private:
 	uint8_t end_byte = 0xBB;
 
 	std::mutex mtx;
-	std::vector<uint8_t> gamepad = {};
+	std::array<uint8_t, 3> gamepad = {0,0,0};
 	std::vector<std::string> input_stream = {};
 
-	uint8_t* prev;
-	uint8_t* curr;
+	std::array<uint8_t, 3> prev = {0,0,0};
+	std::array<uint8_t, 3> curr = {0,0,0};
 
 };
 

@@ -108,8 +108,15 @@ void GamePad::ReadLoop() {
 			//}
 			//cout << endl;
 
+			if (controller_data.size() < 3) {
+				cerr << "Controller data too small: " << controller_data.size() << endl;
+				continue;
+			}
+
 			std::lock_guard<std::mutex> lock(mtx);
-			gamepad = controller_data;
+			gamepad[0] = controller_data[0];
+			gamepad[1] = controller_data[1];
+			gamepad[2] = controller_data[2];
 		}
 		catch (std::exception& e) {
 			cerr << "Serial port read error" << e.what() << endl;
@@ -118,7 +125,7 @@ void GamePad::ReadLoop() {
 	}
 }
 
-std::vector<uint8_t> GamePad::GetGamePad() {
+std::array<uint8_t, 3> GamePad::GetGamePad() {
 	std::lock_guard<std::mutex> lock(mtx);
 	return gamepad;
 }
@@ -126,15 +133,13 @@ std::vector<uint8_t> GamePad::GetGamePad() {
 void GamePad::Update() {
 	std::lock_guard<std::mutex> lock(mtx);
 	prev = curr;
-	curr[0] = gamepad[0];
-	curr[1] = gamepad[1];
-	curr[2] = gamepad[2];
+	curr = gamepad;
 }
 
-std::vector<uint8_t> GamePad::DetectButtonEdge() {
-	std::vector<uint8_t> diff(3);
+std::array<uint8_t, 3> GamePad::DetectButtonEdge() {
+	std::array<uint8_t, 3> diff = {0,0,0};
 	for (int i = 0; i < 3; i++) {
-		diff[i] = (prev[i] ^ curr[i]) & curr[i];
+		diff[i] = static_cast<uint8_t>((prev[i] ^ curr[i]) & curr[i]);
 	}
 	return diff;
 }
@@ -148,17 +153,17 @@ std::vector<std::string> GamePad::GetInputStream() {
 	if (diff[0] & SwitchPro::Buttons0::R)  input_stream.push_back("R");
 	if (diff[0] & SwitchPro::Buttons0::ZR) input_stream.push_back("ZR");
 
-	if (diff[1] & SwitchPro::Buttons1::MINUS)   input_stream.push_back("MINUS");
-	if (diff[1] & SwitchPro::Buttons1::PLUS)    input_stream.push_back("PLUS");
+	if (diff[1] & SwitchPro::Buttons1::MINUS)   input_stream.push_back("-");
+	if (diff[1] & SwitchPro::Buttons1::PLUS)    input_stream.push_back("+");
 	if (diff[1] & SwitchPro::Buttons1::R3)      input_stream.push_back("R3");
 	if (diff[1] & SwitchPro::Buttons1::L3)      input_stream.push_back("L3");
-	if (diff[1] & SwitchPro::Buttons1::HOME)    input_stream.push_back("HOME");
-	if (diff[1] & SwitchPro::Buttons1::CAPTURE) input_stream.push_back("CAPTURE");
+	if (diff[1] & SwitchPro::Buttons1::HOME)    input_stream.push_back("H");
+	if (diff[1] & SwitchPro::Buttons1::CAPTURE) input_stream.push_back("CAP");
 
-	if (diff[2] & SwitchPro::Buttons2::DPAD_DOWN)  input_stream.push_back("DPAD_DOWN");
-	if (diff[2] & SwitchPro::Buttons2::DPAD_UP)    input_stream.push_back("DPAD_UP");
-	if (diff[2] & SwitchPro::Buttons2::DPAD_RIGHT) input_stream.push_back("DPAD_RIGHT");
-	if (diff[2] & SwitchPro::Buttons2::DPAD_LEFT)  input_stream.push_back("DPAD_LEFT");
+	if (diff[2] & SwitchPro::Buttons2::DPAD_DOWN)  input_stream.push_back("↓");
+	if (diff[2] & SwitchPro::Buttons2::DPAD_UP)    input_stream.push_back("↑");
+	if (diff[2] & SwitchPro::Buttons2::DPAD_RIGHT) input_stream.push_back("→");
+	if (diff[2] & SwitchPro::Buttons2::DPAD_LEFT)  input_stream.push_back("←");
 	if (diff[2] & SwitchPro::Buttons2::L)  input_stream.push_back("L");
 	if (diff[2] & SwitchPro::Buttons2::ZL) input_stream.push_back("ZL");
 
