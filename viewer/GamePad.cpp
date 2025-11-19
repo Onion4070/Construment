@@ -136,62 +136,88 @@ void GamePad::Update() {
 	curr = gamepad;
 }
 
-std::array<uint8_t, 3> GamePad::DetectButtonEdge() {
+std::array<uint8_t, 3> GamePad::DetectButtonPressed() {
 	std::array<uint8_t, 3> diff = {0,0,0};
 	for (int i = 0; i < 3; i++) {
+		// rising edge: prev=0, curr=1
 		diff[i] = static_cast<uint8_t>((prev[i] ^ curr[i]) & curr[i]);
 	}
 	return diff;
 }
 
-std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GamePad::GetInputStream() {
-	auto diff = DetectButtonEdge();
+std::array<uint8_t, 3> GamePad::DetectButtonReleased() {
+	std::array<uint8_t, 3> diff = {0,0,0};
+	for (int i = 0; i < 3; i++) {
+		// falling edge: prev=1, curr=0
+		diff[i] = static_cast<uint8_t>((prev[i] ^ curr[i]) & prev[i]);
+	}
+	return diff;
+}
 
+std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GamePad::GetInputStream() {
+	auto diff = DetectButtonPressed();
+	auto releaseDiff = DetectButtonReleased();
+
+	// compute semitone offset from adjust buttons
 	int semitone_offset = 0;
 	if (curr[2] & SwitchPro::Buttons2::ZL) semitone_offset -= 12;  // ZL: octave down
 	if (curr[2] & SwitchPro::Buttons2::L)  semitone_offset -= 1;   // L: semitone down
 	if (curr[0] & SwitchPro::Buttons0::R)  semitone_offset += 1;   // R: semitone up
 	if (curr[0] & SwitchPro::Buttons0::ZR) semitone_offset += 12;  // ZR: octave up
 
+	// build index string describing current adjust buttons (space-separated)
 	std::string idx=" ";
 	if (curr[2] & SwitchPro::Buttons2::ZL) idx += "ZL ";
 	if (curr[2] & SwitchPro::Buttons2::L)  idx += "L ";
 	if (curr[0] & SwitchPro::Buttons0::R)  idx += "R ";
 	if (curr[0] & SwitchPro::Buttons0::ZR) idx += "ZR ";
 
-	if (diff[2] & SwitchPro::Buttons2::DPAD_UP) {
-		Scale::Note n = Scale::transpose(Scale::C4, semitone_offset);
-		input_stream.push_back({n, {"↑", idx}});
-	}
-	if (diff[2] & SwitchPro::Buttons2::DPAD_LEFT) {
-		Scale::Note n = Scale::transpose(Scale::D4, semitone_offset);
-		input_stream.push_back({n, {"←", idx}});
-	}
-	if (diff[2] & SwitchPro::Buttons2::DPAD_DOWN) {
-		Scale::Note n = Scale::transpose(Scale::E4, semitone_offset);
-		input_stream.push_back({n, {"↓", idx}});
-	}
-	if (diff[2] & SwitchPro::Buttons2::DPAD_RIGHT) {
-		Scale::Note n = Scale::transpose(Scale::F4, semitone_offset);
-		input_stream.push_back({n, {"→", idx}});
-	}
-	if (diff[0] & SwitchPro::Buttons0::X) {
-		Scale::Note n = Scale::transpose(Scale::G4, semitone_offset);
-		input_stream.push_back({n, {"X", idx}});
-	}
-	if (diff[0] & SwitchPro::Buttons0::A) {
-		Scale::Note n = Scale::transpose(Scale::A4, semitone_offset);
-		input_stream.push_back({n, {"A", idx}});
-	}
-	if (diff[0] & SwitchPro::Buttons0::B) {
-		Scale::Note n = Scale::transpose(Scale::B4, semitone_offset);
-		input_stream.push_back({n, {"B", idx}});
-	}
-	if (diff[0] & SwitchPro::Buttons0::Y) {
-		Scale::Note n = Scale::transpose(Scale::C5, semitone_offset);
-		input_stream.push_back({n, {"Y", idx}});
+	// button definitions: byte index, mask, base note, label
+	struct Btn { int byteIdx; uint8_t mask; Scale::Note base; const char* label; };
+	const std::vector<Btn> buttons = {
+		{2, SwitchPro::Buttons2::DPAD_UP,    Scale::C4, "↑"},
+		{2, SwitchPro::Buttons2::DPAD_LEFT,  Scale::D4, "←"},
+		{2, SwitchPro::Buttons2::DPAD_DOWN,  Scale::E4, "↓"},
+		{2, SwitchPro::Buttons2::DPAD_RIGHT, Scale::F4, "→"},
+		{0, SwitchPro::Buttons0::X,          Scale::G4, "X"},
+		{0, SwitchPro::Buttons0::A,          Scale::A4, "A"},
+		{0, SwitchPro::Buttons0::B,          Scale::B4, "B"},
+		{0, SwitchPro::Buttons0::Y,          Scale::C5, "Y"}
+	};
+
+	auto pushNote = [&](const Btn& b) {
+		Scale::Note n = Scale::transpose(b.base, semitone_offset);
+		input_stream.push_back({n, {std::string(b.label), idx}});
+	};
+
+	// 1) handle rising edges (newly pressed buttons)
+	for (const auto& b : buttons) {
+		if (diff[b.byteIdx] & b.mask) pushNote(b);
 	}
 
+	// detect adjust press / release events
+	bool adjustEdge = (diff[2] & (SwitchPro::Buttons2::ZL | SwitchPro::Buttons2::L)) || (diff[0] & (SwitchPro::Buttons0::R | SwitchPro::Buttons0::ZR));
+	bool adjustRelease = (releaseDiff[2] & (SwitchPro::Buttons2::ZL | SwitchPro::Buttons2::L)) || (releaseDiff[0] & (SwitchPro::Buttons0::R | SwitchPro::Buttons0::ZR));
+
+	// 2) if adjust button pressed, re-push currently held note(s) (that didn't just have a rising edge)
+	if (adjustEdge) {
+		for (const auto& b : buttons) {
+			if ((curr[b.byteIdx] & b.mask) && !(diff[b.byteIdx] & b.mask)) {
+				pushNote(b);
+			}
+		}
+	}
+
+	// 3) if adjust button released, push currently held note(s) again (reflecting new offset)
+	if (adjustRelease) {
+		for (const auto& b : buttons) {
+			if ((curr[b.byteIdx] & b.mask) && !(diff[b.byteIdx] & b.mask)) {
+				pushNote(b);
+			}
+		}
+	}
+
+	// keep buffer bounded
 	if (input_stream.size() > 12) {
 		input_stream.erase(input_stream.begin(), input_stream.begin() + (input_stream.size() - 12));
 	}

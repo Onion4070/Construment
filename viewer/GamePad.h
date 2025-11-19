@@ -12,7 +12,8 @@ public:
 	std::array<uint8_t, 3> GetGamePad();
 	void Update();
 	std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GetInputStream();
-	std::array<uint8_t, 3> DetectButtonEdge();
+	std::array<uint8_t, 3> DetectButtonPressed();
+	std::array<uint8_t, 3> DetectButtonReleased();
 
 	void Connect(const std::string& portName);
 	void Disconnect();
