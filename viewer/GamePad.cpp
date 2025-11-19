@@ -39,7 +39,7 @@ GamePad::~GamePad() {
 }
 
 void GamePad::Connect(const std::string& portName) {
-	if (connected) {
+	if (connected.load()) {
 		cout << "Already connected." << endl;
 		return;
 	}
@@ -54,21 +54,21 @@ void GamePad::Connect(const std::string& portName) {
 		serial.set_option(asio::serial_port_base::flow_control(asio::serial_port_base::flow_control::none));
 
 		// 別スレッドで実行
-		ioThread = std::thread([this]() { 
+		ioThread = std::thread([this]() {
 			ReadLoop();
 		});
 
-		connected = true;
+		connected.store(true);
 		cout << "Connected to " << portName << endl;
 	}
 	catch (std::exception& e) {
 		cout << "Error connecting to " << portName << ": " << e.what() << endl;
-		connected = false;
+		connected.store(false);
 	}
 }
 
 void GamePad::Disconnect() {
-	if (!connected) {
+	if (!connected.load()) {
 		return;
 	}
 	try {
@@ -76,7 +76,7 @@ void GamePad::Disconnect() {
 		if (ioThread.joinable()) {
 			ioThread.join();
 		}
-		connected = false;
+		connected.store(false);
 		cout << "Disconnected." << endl;
 	}
 	catch (std::exception& e) {
@@ -85,7 +85,7 @@ void GamePad::Disconnect() {
 }
 
 void GamePad::ReadLoop() {
-	while (connected) {
+	while (connected.load()) {
 		try {
 			uint8_t current_byte;
 			asio::read(serial, asio::buffer(&current_byte, 1));
@@ -98,7 +98,7 @@ void GamePad::ReadLoop() {
 
 			asio::read(serial, asio::buffer(&current_byte, 1));
 
-			if (current_byte != end_byte) {
+			if (current_byte != END_BYTE) {
 				cerr << "Invalid end byte" << endl;
 				continue;
 			}
@@ -120,7 +120,7 @@ void GamePad::ReadLoop() {
 		}
 		catch (std::exception& e) {
 			cerr << "Serial port read error" << e.what() << endl;
-			connected = false;
+			connected.store(false);
 		}
 	}
 }
@@ -231,31 +231,29 @@ std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GamePad
 }
 
 void GamePad::SendDefaultNote(Scale::Note note_l, Scale::Note note_r) {
-	if (!connected) {
+	if (!connected.load()) {
 		cout << "Not connected, cannot send default note." << endl;
 		return;
 	}
-
-	// Build packet: start, size, cmd, note_l, note_r, end
-	const uint8_t start_byte = 0xAA;
-	const uint8_t end_byte = 0xBB;
+	// Build packet: START_BYTE, size, cmd, note_l, note_r, END_BYTE
 	const uint8_t cmd_set_default = 0x01;
 	const uint8_t payload_size = 3; // cmd + note_l + note_r
 
 	uint8_t packet[6];
-	packet[0] = start_byte;
+	packet[0] = START_BYTE;
 	packet[1] = payload_size;
 	packet[2] = cmd_set_default;
 	packet[3] = static_cast<uint8_t>(note_l);
 	packet[4] = static_cast<uint8_t>(note_r);
-	packet[5] = end_byte;
+	packet[5] = END_BYTE;
 
 	try {
-		// Write synchronously to serial port
+		// protect concurrent writes to the serial port
+		std::lock_guard<std::mutex> wlock(serial_write_mtx);
 		asio::write(serial, asio::buffer(packet, sizeof(packet)));
-		cout << "Sent SendDefaultNote packet: " << std::hex << (int)packet[2] << " " << (int)packet[3] << " " << (int)packet[4] << std::dec << endl;
+		std::cout << "Sent SendDefaultNote packet: " << std::hex << (int)packet[2] << " " << (int)packet[3] << " " << (int)packet[4] << std::dec << std::endl;
 	}
 	catch (const std::exception& e) {
-		cout << "Error sending default note: " << e.what() << endl;
+		std::cout << "Error sending default note: " << e.what() << std::endl;
 	}
 }

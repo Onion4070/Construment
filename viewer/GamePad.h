@@ -3,6 +3,7 @@
 #include <wx/wx.h>
 #include "Scale.h"
 #include "globals.h"
+#include <atomic>
 
 class GamePad
 {
@@ -29,11 +30,15 @@ private:
 	asio::io_context io;
 	asio::serial_port serial;
 	std::thread ioThread;
-	bool connected = false;
-	uint8_t start_byte = 0xAA;
-	uint8_t end_byte = 0xBB;
+	std::atomic<bool> connected{false};
+	static constexpr uint8_t START_BYTE = 0xAA;
+	static constexpr uint8_t END_BYTE = 0xBB;
 
+	// mutex protecting access to gamepad state (prev/curr/gamepad)
 	std::mutex mtx;
+	// mutex guarding serial writes to avoid concurrent write while ReadLoop runs
+	std::mutex serial_write_mtx;
+
 	std::array<uint8_t, 3> gamepad = {0,0,0};
 	std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> input_stream = {};
 

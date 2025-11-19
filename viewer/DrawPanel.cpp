@@ -192,7 +192,7 @@ void DrawPanel::Draw(wxGCDC* gdc, std::vector<std::pair<Scale::Note, std::pair<s
 		auto isSharp = [](Scale::Note n) -> bool {
 			using Scale::Note;
 			switch (n) {
-				case Note::Gs2: case Note::As2:
+																case Note::Gs2: case Note::As2:
 				case Note::Cs3: case Note::Ds3: case Note::Fs3: case Note::Gs3: case Note::As3:
 				case Note::Cs4: case Note::Ds4: case Note::Fs4: case Note::Gs4: case Note::As4:
 				case Note::Cs5: case Note::Ds5: case Note::Fs5: case Note::Gs5: case Note::As5:
