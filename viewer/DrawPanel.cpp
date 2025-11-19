@@ -1,4 +1,5 @@
 ﻿#include "DrawPanel.h"
+#include "MIDIPlayer.h"
 #include "Scale.h"
 #include <cctype>
 
@@ -14,6 +15,21 @@ wxEND_EVENT_TABLE()
 wxPen blackPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
 wxPen bluePen(*wxBLUE, 2, wxPENSTYLE_SOLID); // 青色ペン，太さ2, 実線
 wxPen anyColorPen(wxColor(255, 100, 100), 5); // 任意の色(薄い赤)，太さ5
+
+inline Scale::Note MidiToScale(int midi_note) {
+	int semitone = midi_note - 60; // C4 = 60
+	return Scale::transpose(Scale::C4, semitone);
+}
+
+MIDIPlayer midi;
+bool midiPlaying = false;
+
+void DrawPanel::LoadMIDI(const std::string& path) {
+	if (midi.load(path)) {
+		midiPlaying = true;
+	}
+}
+
 
 
 DrawPanel::DrawPanel(wxWindow* parent)
@@ -115,6 +131,34 @@ void DrawPanel::ClearBackground(wxGCDC& gdc) {
 }
 
 void DrawPanel::OnTimer(wxTimerEvent& event) {
+	const double dt = 0.008; // 8ms
+
+	if (midiPlaying && gamepad.IsConnected()) {
+		midi.update(
+			dt,
+			// トラック0 → 左
+			[&](int midi_note) {
+				Scale::Note n = MidiToScale(midi_note);
+				current_left = n;
+				gamepad.SendDefaultNote(current_left, current_right);
+			},
+			[&](int midi_note) {
+				current_left = Scale::Silence;
+				gamepad.SendDefaultNote(current_left, current_right);
+			},
+
+			// トラック1 → 右
+			[&](int midi_note) {
+				Scale::Note n = MidiToScale(midi_note);
+				current_right = n;
+				gamepad.SendDefaultNote(current_left, current_right);
+			},
+			[&](int midi_note) {
+				current_right = Scale::Silence;
+				gamepad.SendDefaultNote(current_left, current_right);
+			}
+		);
+	}
 	Refresh();
 }
 
@@ -155,6 +199,8 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	gdc.DrawText(info, GetSize().GetHeight()/2, 550); // テキスト描画
 
 	auto gamepad_state = gamepad.GetGamePad();
-	if (gamepad_state.empty() || !gamepad.IsConnected()) return;
-	// cout << (int)gamepad_state[3] << endl;
+	if (!gamepad.IsConnected()) return;
+	if (!midiPlaying) {
+		LoadMIDI("assets/sample.mid");
+	}
 }
