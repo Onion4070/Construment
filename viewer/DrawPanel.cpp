@@ -156,31 +156,84 @@ void DrawPanel::DrawScoreLine(wxGCDC& gdc, int width = 50, int offset = 50) {
 //}
 
 
-void DrawPanel::Draw(wxGCDC* gdc, std::vector<std::string>& notes) {
+void DrawPanel::Draw(wxGCDC* gdc, std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>>& notes) {
 	wxPen buttonPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
 	gdc->SetPen(buttonPen);
 
-	const int baseX = 300;
-	const int baseY = 100;
-	const int spacing = 80;
+	const int baseX = 300; // left-to-right placement base
+	const int baseY = 250; // top-to-bottom placement base
+	const int spacing = 80; // horizontal spacing between notes
 	const int radius = 25;
 
-	for (int i = 0; i < notes.size(); i++) {
-		auto button = notes[i];
+	int drawCount = 12;
+	int total = (int)notes.size();
+	if (total == 0) return;
+	int start = total - drawCount;
+	if (start < 0) start = 0;
+
+	const int staffOffset = 50;   // same as DrawScoreLine default offset
+	const int staffSpacing = 50;  // same as DrawScoreLine default width (line spacing)
+
+	for (int i = start; i < total; i++) {
+		auto [note, label_pair] = notes[i];
+		auto [label, idxStr] = label_pair;
 
 		int fontSize = 30;
 		wxFont noteFont(fontSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
 		gdc->SetFont(noteFont);
 
-		int cx = baseX + spacing * i;
-		int cy = baseY;
+		int noteIndex = (int)note;
+		if (noteIndex < 0) noteIndex = 0;
+		if (noteIndex >= (int)Scale::COUNT) noteIndex = (int)Scale::COUNT - 1;
+
+		int cy = staffOffset + baseY + noteHeight[noteIndex];
+
+		int cx = baseX + spacing * (i - start);
 		gdc->DrawCircle(cx, cy, radius);
 
 		int tw, th;
-		gdc->GetTextExtent(button, &tw, &th);
+		gdc->GetTextExtent(label, &tw, &th);
 		int tx = cx - tw / 2;
 		int ty = cy - th / 2;
-		gdc->DrawText(button, tx, ty);
+		gdc->DrawText(label, tx, ty);
+
+		// if the note is a sharp, draw a '#' to the right of the circle
+		auto isSharp = [](Scale::Note n) -> bool {
+			using Scale::Note;
+			switch (n) {
+				case Note::Gs2: case Note::As2:
+				case Note::Cs3: case Note::Ds3: case Note::Fs3: case Note::Gs3: case Note::As3:
+				case Note::Cs4: case Note::Ds4: case Note::Fs4: case Note::Gs4: case Note::As4:
+				case Note::Cs5: case Note::Ds5: case Note::Fs5: case Note::Gs5: case Note::As5:
+				case Note::Cs6: case Note::Ds6:
+					return true;
+				default:
+					return false;
+			}
+		};
+
+		if (isSharp(note)) {
+			std::string sharp = "#";
+			int ssw, ssh;
+			gdc->GetTextExtent(sharp, &ssw, &ssh);
+			int shx = cx - radius - ssw - 6;
+			int shy = cy - ssh / 2;
+			gdc->DrawText(sharp, shx, shy);
+		}
+
+		// draw index string under the circle (as subscript)
+		if (!idxStr.empty()) {
+			int idxFontSize = 14;
+			wxFont idxFont(idxFontSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
+			gdc->SetFont(idxFont);
+			int itw, ith;
+			gdc->GetTextExtent(idxStr, &itw, &ith);
+			int itx = cx - itw / 2;
+			int ity = cy + radius + 4; // small padding below the circle
+			gdc->DrawText(idxStr, itx, ity);
+			// restore main font for next iteration
+			gdc->SetFont(noteFont);
+		}
 	}
 }
 
@@ -188,6 +241,8 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	wxAutoBufferedPaintDC dc(this);
 	wxGCDC gdc(dc);
 	ClearBackground(gdc);
+	// 背景のクリアは元の座標系で行いたいため、ClearBackground の後にデバイス原点を移動する
+	gdc.SetDeviceOrigin(0, 100);
 	DrawScoreLine(gdc);
 
 	gdc.DrawBitmap(svgBitmapTreble, 50, 20, true); // ト音記号

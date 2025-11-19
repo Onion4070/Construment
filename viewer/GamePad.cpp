@@ -144,28 +144,57 @@ std::array<uint8_t, 3> GamePad::DetectButtonEdge() {
 	return diff;
 }
 
-std::vector<std::string> GamePad::GetInputStream() {
+std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GamePad::GetInputStream() {
 	auto diff = DetectButtonEdge();
-	if (diff[0] & SwitchPro::Buttons0::A)  input_stream.push_back("A");
-	if (diff[0] & SwitchPro::Buttons0::B)  input_stream.push_back("B");
-	if (diff[0] & SwitchPro::Buttons0::X)  input_stream.push_back("X");
-	if (diff[0] & SwitchPro::Buttons0::Y)  input_stream.push_back("Y");
-	if (diff[0] & SwitchPro::Buttons0::R)  input_stream.push_back("R");
-	if (diff[0] & SwitchPro::Buttons0::ZR) input_stream.push_back("ZR");
 
-	if (diff[1] & SwitchPro::Buttons1::MINUS)   input_stream.push_back("-");
-	if (diff[1] & SwitchPro::Buttons1::PLUS)    input_stream.push_back("+");
-	if (diff[1] & SwitchPro::Buttons1::R3)      input_stream.push_back("R3");
-	if (diff[1] & SwitchPro::Buttons1::L3)      input_stream.push_back("L3");
-	if (diff[1] & SwitchPro::Buttons1::HOME)    input_stream.push_back("H");
-	if (diff[1] & SwitchPro::Buttons1::CAPTURE) input_stream.push_back("CAP");
+	int semitone_offset = 0;
+	if (curr[2] & SwitchPro::Buttons2::ZL) semitone_offset -= 12;  // ZL: octave down
+	if (curr[2] & SwitchPro::Buttons2::L)  semitone_offset -= 1;   // L: semitone down
+	if (curr[0] & SwitchPro::Buttons0::R)  semitone_offset += 1;   // R: semitone up
+	if (curr[0] & SwitchPro::Buttons0::ZR) semitone_offset += 12;  // ZR: octave up
 
-	if (diff[2] & SwitchPro::Buttons2::DPAD_DOWN)  input_stream.push_back("↓");
-	if (diff[2] & SwitchPro::Buttons2::DPAD_UP)    input_stream.push_back("↑");
-	if (diff[2] & SwitchPro::Buttons2::DPAD_RIGHT) input_stream.push_back("→");
-	if (diff[2] & SwitchPro::Buttons2::DPAD_LEFT)  input_stream.push_back("←");
-	if (diff[2] & SwitchPro::Buttons2::L)  input_stream.push_back("L");
-	if (diff[2] & SwitchPro::Buttons2::ZL) input_stream.push_back("ZL");
+	std::string idx=" ";
+	if (curr[2] & SwitchPro::Buttons2::ZL) idx += "ZL ";
+	if (curr[2] & SwitchPro::Buttons2::L)  idx += "L ";
+	if (curr[0] & SwitchPro::Buttons0::R)  idx += "R ";
+	if (curr[0] & SwitchPro::Buttons0::ZR) idx += "ZR ";
+
+	if (diff[2] & SwitchPro::Buttons2::DPAD_UP) {
+		Scale::Note n = Scale::transpose(Scale::C4, semitone_offset);
+		input_stream.push_back({n, {"↑", idx}});
+	}
+	if (diff[2] & SwitchPro::Buttons2::DPAD_LEFT) {
+		Scale::Note n = Scale::transpose(Scale::D4, semitone_offset);
+		input_stream.push_back({n, {"←", idx}});
+	}
+	if (diff[2] & SwitchPro::Buttons2::DPAD_DOWN) {
+		Scale::Note n = Scale::transpose(Scale::E4, semitone_offset);
+		input_stream.push_back({n, {"↓", idx}});
+	}
+	if (diff[2] & SwitchPro::Buttons2::DPAD_RIGHT) {
+		Scale::Note n = Scale::transpose(Scale::F4, semitone_offset);
+		input_stream.push_back({n, {"→", idx}});
+	}
+	if (diff[0] & SwitchPro::Buttons0::X) {
+		Scale::Note n = Scale::transpose(Scale::G4, semitone_offset);
+		input_stream.push_back({n, {"X", idx}});
+	}
+	if (diff[0] & SwitchPro::Buttons0::A) {
+		Scale::Note n = Scale::transpose(Scale::A4, semitone_offset);
+		input_stream.push_back({n, {"A", idx}});
+	}
+	if (diff[0] & SwitchPro::Buttons0::B) {
+		Scale::Note n = Scale::transpose(Scale::B4, semitone_offset);
+		input_stream.push_back({n, {"B", idx}});
+	}
+	if (diff[0] & SwitchPro::Buttons0::Y) {
+		Scale::Note n = Scale::transpose(Scale::C5, semitone_offset);
+		input_stream.push_back({n, {"Y", idx}});
+	}
+
+	if (input_stream.size() > 12) {
+		input_stream.erase(input_stream.begin(), input_stream.begin() + (input_stream.size() - 12));
+	}
 
 	return input_stream;
 }
