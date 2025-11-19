@@ -127,35 +127,6 @@ void DrawPanel::DrawScoreLine(wxGCDC& gdc, int width = 50, int offset = 150) {
 	}
 }
 
-//void DrawPanel::DrawNote(wxGCDC* gdc, std::vector<std::pair<uint8_t, std::string>>& notes) {
-//	wxPen buttonPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
-//	gdc->SetPen(buttonPen);
-//
-//	const int baseX = 300;
-//	const int baseY = 100;
-//	const int spacing = 80;
-//	const int radius = 25;
-//
-//	for (int i = 0; i < notes.size(); i++) {
-//		auto [scale, button] = notes[i];
-//
-//		int fontSize = 30;
-//		wxFont noteFont(fontSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
-//		gdc->SetFont(noteFont);
-//
-//		int cx = baseX + spacing * i;
-//		int cy = baseY;
-//		gdc->DrawCircle(cx, cy, radius);
-//
-//		int tw, th;
-//		gdc, GetTextExtent(button, &tw, &th);
-//		int tx = cx - tw / 2;
-//		int ty = cy - th / 2;
-//		gdc->DrawText(button, tx, ty);
-//	}
-//}
-
-
 void DrawPanel::Draw(wxGCDC* gdc, std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>>& notes) {
 	wxPen buttonPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
 	gdc->SetPen(buttonPen);
@@ -282,13 +253,6 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	gdc.SetFont(font);
 	wxString info = wxString::Format("Vol. %d", GetSize().GetWidth()); // 仮
 	gdc.DrawText(info, GetSize().GetHeight()/2, 650); // テキスト描画
-
-	//std::vector<std::pair<uint8_t, std::string>> buf;
-	//buf.push_back({ 0x60, "A" });
-	//buf.push_back({ 0x70, "B" });
-	//buf.push_back({ 0x80, "X" });
-	//buf.push_back({ 0x90, "Y" });
-
 
 	auto gamepad_state = gamepad.GetGamePad();
 	if (!gamepad.IsConnected()) return;

@@ -179,7 +179,7 @@ std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GamePad
 
 	// button definitions: byte index, mask, base note, label
 	struct Btn { int byteIdx; uint8_t mask; Scale::Note base; const char* label; };
-	const std::vector<Btn> buttons = {
+	const Btn buttons[] = {
 		{2, SwitchPro::Buttons2::DPAD_UP,    Scale::C4, "↑"},
 		{2, SwitchPro::Buttons2::DPAD_LEFT,  Scale::D4, "←"},
 		{2, SwitchPro::Buttons2::DPAD_DOWN,  Scale::E4, "↓"},

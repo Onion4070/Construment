@@ -22,7 +22,6 @@ private:
 	void OnPaint(wxPaintEvent& event);
 	void ClearBackground(wxGCDC& gdc);
 	void DrawScoreLine(wxGCDC& gdc, int width, int offset);
-	void DrawNote(wxGCDC* gdc, std::vector<std::pair<uint8_t, std::string>>& notes);
 	void Draw(wxGCDC* gdc, std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>>& notes);
 	void OnTimer(wxTimerEvent& event);
 
@@ -45,13 +44,12 @@ private:
 	Scale::Note current_right = Scale::Silence;
 
 	// per-note vertical positions (pixels) used for drawing; initialized in constructor
-	std::vector<int> noteHeight = {
+	const int noteHeight[Scale::COUNT] = {
 														 250,  225,  225,  200,
 		 175,  175,  150,  150,  125,  100,  100,   75,   75,   50,   50,   25,
 		   0,    0,  -25,  -25,  -50,  -75,  -75, -100, -100, -125, -125, -150,
 		-175, -175, -200, -200, -225, -250, -250, -275, -275, -300, -300, -325,
 		-350, -350, -375, -375,
-		-500,
 		-500
 	};
 
