@@ -5,6 +5,12 @@
 #include "globals.h"
 #include <atomic>
 
+struct NoteInfo {
+	Scale::Note note;
+	std::string label;
+	std::string indexStr;
+};
+
 class GamePad
 {
 public:
@@ -12,7 +18,7 @@ public:
 	~GamePad();
 	std::array<uint8_t, 3> GetGamePad();
 	void Update();
-	std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GetInputStream();
+	std::vector<NoteInfo> GetInputStream();
 	std::array<uint8_t, 3> DetectButtonPressed();
 	std::array<uint8_t, 3> DetectButtonReleased();
 
@@ -40,7 +46,7 @@ private:
 	std::mutex serial_write_mtx;
 
 	std::array<uint8_t, 3> gamepad = {0,0,0};
-	std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> input_stream = {};
+	std::vector<NoteInfo> input_stream = {};
 
 	std::array<uint8_t, 3> prev = {0,0,0};
 	std::array<uint8_t, 3> curr = {0,0,0};

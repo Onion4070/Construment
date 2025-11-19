@@ -127,7 +127,8 @@ void DrawPanel::DrawScoreLine(wxGCDC& gdc, int width = 50, int offset = 150) {
 	}
 }
 
-void DrawPanel::Draw(wxGCDC* gdc, std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>>& notes) {
+// notes: 描画するノートの配列 (NoteInfo)
+void DrawPanel::Draw(wxGCDC* gdc, const std::vector<NoteInfo>& notes) {
 	wxPen buttonPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
 	gdc->SetPen(buttonPen);
 
@@ -146,8 +147,10 @@ void DrawPanel::Draw(wxGCDC* gdc, std::vector<std::pair<Scale::Note, std::pair<s
 	const int staffSpacing = 50;  // same as DrawScoreLine default width (line spacing)
 
 	for (int i = start; i < total; i++) {
-		auto [note, label_pair] = notes[i];
-		auto [label, idxStr] = label_pair;
+		const auto& entry = notes[i];
+		Scale::Note note = entry.note;
+		const std::string& label = entry.label;
+		const std::string& idxStr = entry.indexStr;
 
 		int fontSize = 30;
 		wxFont noteFont(fontSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);

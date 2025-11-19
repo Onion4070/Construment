@@ -154,7 +154,7 @@ std::array<uint8_t, 3> GamePad::DetectButtonReleased() {
 	return diff;
 }
 
-std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GamePad::GetInputStream() {
+std::vector<NoteInfo> GamePad::GetInputStream() {
 	auto diff = DetectButtonPressed();
 	auto releaseDiff = DetectButtonReleased();
 
@@ -192,7 +192,7 @@ std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GamePad
 
 	auto pushNote = [&](const Btn& b) {
 		Scale::Note n = Scale::transpose(b.base, semitone_offset);
-		input_stream.push_back({n, {std::string(b.label), idx}});
+		input_stream.push_back({n, std::string(b.label), idx});
 	};
 
 	// 1) handle rising edges (newly pressed buttons)
