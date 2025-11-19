@@ -158,6 +158,11 @@ std::vector<std::pair<Scale::Note, std::pair<std::string, std::string>>> GamePad
 	auto diff = DetectButtonPressed();
 	auto releaseDiff = DetectButtonReleased();
 
+	if (diff[1] & SwitchPro::Buttons1::L3) {
+		input_stream.clear();
+		return input_stream;
+	}
+
 	// compute semitone offset from adjust buttons
 	int semitone_offset = 0;
 	if (curr[2] & SwitchPro::Buttons2::ZL) semitone_offset -= 12;  // ZL: octave down
