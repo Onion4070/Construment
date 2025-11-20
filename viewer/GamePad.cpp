@@ -60,6 +60,7 @@ void GamePad::Connect(const std::string& portName) {
 
 		connected.store(true);
 		std::cout << "Connected to " << portName << std::endl;
+		SendDefaultNote(Scale::Silence, Scale::Silence);
 	}
 	catch (std::exception& e) {
 		std::cout << "Error connecting to " << portName << ": " << e.what() << std::endl;
