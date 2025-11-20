@@ -23,7 +23,6 @@ private:
 	void ClearBackground(wxGCDC& gdc);
 	void DrawScoreLine(wxGCDC& gdc, int width, int offset);
 	void OnTimer(wxTimerEvent& event);
-	void LoadMIDI(const std::string& path);
 
 	wxBitmap svgBitmapTreble; // SVG画像を保持するビットマップ
 	wxBitmap svgBitmapBass;

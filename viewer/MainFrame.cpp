@@ -21,6 +21,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	connectButton = new wxButton(topPanel, wxID_ANY, "Connect");
 	refreshButton = new wxButton(topPanel, wxID_ANY, "Refresh");
 	loadButton = new wxButton(topPanel, wxID_ANY, "Load");
+	playButton = new wxButton(topPanel, wxID_ANY, "Play");
 
 	RefreshComPorts();
 
@@ -28,6 +29,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	topSizer->Add(connectButton, 0, wxEXPAND);
 	topSizer->Add(refreshButton, 0, wxEXPAND | wxLEFT);
 	topSizer->Add(loadButton, 0, wxEXPAND | wxLEFT);
+	topSizer->Add(playButton, 0, wxEXPAND | wxLEFT);
 
 	topPanel->SetSizer(topSizer);
 
@@ -39,6 +41,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	connectButton->Bind(wxEVT_BUTTON, &MainFrame::OnConnect, this);
 	refreshButton->Bind(wxEVT_BUTTON, &MainFrame::OnRefresh, this);
 	loadButton->Bind(wxEVT_BUTTON, &MainFrame::OnLoad, this);
+	playButton->Bind(wxEVT_BUTTON, &MainFrame::OnPlay, this);
 }
 
 void MainFrame::RefreshComPorts() {
@@ -84,4 +87,13 @@ void MainFrame::OnLoad(wxCommandEvent& event) {
 	}
 	cout << "Selected file: " << openFileDialog->GetFilename() << endl;
 	cout << "Full path: " << openFileDialog->GetPath() << endl;
+	drawPanel->gamepad.LoadMidi(openFileDialog->GetPath().ToStdString());
+}
+
+void MainFrame::OnPlay(wxCommandEvent& event) {
+	if (!drawPanel->gamepad.IsConnected()) {
+		wxMessageBox("Please connect to a COM port first.", "Error", wxOK | wxICON_ERROR);
+		return;
+	}
+	drawPanel->gamepad.PlayMidi();
 }

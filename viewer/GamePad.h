@@ -3,6 +3,7 @@
 #include <wx/wx.h>
 #include "Scale.h"
 #include "globals.h"
+#include "MIDIPlayer.h"
 
 class GamePad
 {
@@ -19,8 +20,14 @@ public:
 	// [start=0xAA][size=3][cmd=0x01][note_l][note_r][end=0xBB]
 	// note_l / note_r are values from Scale::Note (stored as uint8_t).
 	void SendDefaultNote(Scale::Note note_l, Scale::Note note_r);
+	bool LoadMidi(const std::string& path);
+	void PlayMidi();
+	void SendNotes(const ActiveNotes& notes);
+	MIDIPlayer midi;
+	bool midiPlaying = false;
 
 private:
+	Scale::Note MidiToScale(int midi_note);
 	void ReadLoop();
 	asio::io_context io;
 	asio::serial_port serial;

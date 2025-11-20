@@ -10,14 +10,14 @@ bool MIDIPlayer::load(const std::string& path) {
     file.linkNotePairs();
 
     events.clear();
+    left_current = -1;
+    right_current = -1;
 
     int tracks = file.getTrackCount();
     if (tracks < 1) return false;
 
-    // トラック 0 → left
-    // トラック 1 → right
     for (int t = 0; t < tracks; t++) {
-        if (t > 1) break; // 0,1 以外無視
+        if (t > 1) break;  // トラック0,1 以外無視
 
         for (int i = 0; i < file[t].size(); i++) {
             MidiEvent& ev = file[t][i];
@@ -29,9 +29,7 @@ bool MIDIPlayer::load(const std::string& path) {
                 events.push_back({ t_on, true, note, t });
 
                 // 対応する NoteOff
-                double dur = ev.getDurationInSeconds();
-                double t_off = t_on + dur;
-
+                double t_off = t_on + ev.getDurationInSeconds();
                 events.push_back({ t_off, false, note, t });
             }
         }
@@ -46,27 +44,21 @@ bool MIDIPlayer::load(const std::string& path) {
     return true;
 }
 
-void MIDIPlayer::update(
-    double dt_sec,
-    std::function<void(int)> left_on,
-    std::function<void(int)> left_off,
-    std::function<void(int)> right_on,
-    std::function<void(int)> right_off
-) {
+ActiveNotes MIDIPlayer::update(double dt_sec) {
     curTime += dt_sec;
 
     while (index < events.size() && events[index].time_sec <= curTime) {
         Event& e = events[index];
 
         if (e.track == 0) {
-            if (e.on) left_on(e.note);
-            else      left_off(e.note);
+            left_current = e.on ? e.note : -1;
         }
         else if (e.track == 1) {
-            if (e.on) right_on(e.note);
-            else      right_off(e.note);
+            right_current = e.on ? e.note : -1;
         }
 
         index++;
     }
+
+    return { left_current, right_current };
 }

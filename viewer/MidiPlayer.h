@@ -4,20 +4,17 @@
 #include <vector>
 #include <functional>
 
+struct ActiveNotes {
+    int left = -1;   // 鳴らすMIDIノート番号（-1 なら無音）
+    int right = -1;
+};
+
 class MIDIPlayer {
 public:
     bool load(const std::string& path);
 
     // dt_sec: 経過秒数 (timer から渡す)
-    // left_note_on  / left_note_off  : トラック0 のノートコールバック
-    // right_note_on / right_note_off : トラック1 のノートコールバック
-    void update(
-        double dt_sec,
-        std::function<void(int midi_note)> left_note_on,
-        std::function<void(int midi_note)> left_note_off,
-        std::function<void(int midi_note)> right_note_on,
-        std::function<void(int midi_note)> right_note_off
-    );
+    ActiveNotes update(double dt_sec);
 
 private:
     struct Event {
@@ -30,4 +27,7 @@ private:
     std::vector<Event> events;
     size_t index = 0;
     double curTime = 0;
+
+	int left_current = -1;
+	int right_current = -1;
 };
