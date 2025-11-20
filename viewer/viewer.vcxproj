@@ -141,17 +141,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\midifile\src\Binasc.cpp" />
-    <ClCompile Include="..\..\..\..\midifile\src\MidiEvent.cpp" />
-    <ClCompile Include="..\..\..\..\midifile\src\MidiEventList.cpp" />
-    <ClCompile Include="..\..\..\..\midifile\src\MidiFile.cpp" />
-    <ClCompile Include="..\..\..\..\midifile\src\MidiMessage.cpp" />
-    <ClCompile Include="..\..\..\..\midifile\src\Options.cpp" />
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="Binasc.cpp" />
     <ClCompile Include="DrawPanel.cpp" />
     <ClCompile Include="GamePad.cpp" />
     <ClCompile Include="MainFrame.cpp" />
+    <ClCompile Include="MidiEvent.cpp" />
+    <ClCompile Include="MidiEventList.cpp" />
+    <ClCompile Include="MidiFile.cpp" />
+    <ClCompile Include="MidiMessage.cpp" />
     <ClCompile Include="MidiPlayer.cpp" />
+    <ClCompile Include="Options.cpp" />
     <ClCompile Include="SerialUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
