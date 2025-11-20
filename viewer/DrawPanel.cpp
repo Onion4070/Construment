@@ -188,7 +188,6 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<std::pair<NoteInfo, NoteInfo
 			}
 		}
 
-		// restore previous pen and draw the note circle so it appears above the ledger line
 		gdc->SetPen(oldPen);
 		gdc->DrawCircle(cx, cy, radius);
 

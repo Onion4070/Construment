@@ -18,15 +18,13 @@ public:
 	~GamePad();
 	std::array<uint8_t, 3> GetGamePad();
 	void Update();
-	// Provide current default notes (from DrawPanel) so defaults are shared between viewer and GamePad.
-	// Pass by reference so GamePad can modify the defaults (e.g. set to Silence when R3 is pressed).
 	std::vector<std::pair<NoteInfo, NoteInfo>> GetInputStream(Scale::Note &default_left, Scale::Note &default_right);
 	std::array<uint8_t, 3> DetectButtonPressed();
 	std::array<uint8_t, 3> DetectButtonReleased();
 
 	void Connect(const std::string& portName);
 	void Disconnect();
-	bool IsConnected() const { return connected; }
+	bool IsConnected() const { return connected.load(); }
 
 	// Send default-note command to the device. The packet format is:
 	// [start=0xAA][size=3][cmd=0x01][note_l][note_r][end=0xBB]
@@ -52,7 +50,6 @@ private:
 
 	std::array<uint8_t, 3> prev = {0,0,0};
 	std::array<uint8_t, 3> curr = {0,0,0};
-	// last pair that was considered "playing" (used to detect changes)
 	std::pair<NoteInfo, NoteInfo> last_playing_pair = { {Scale::Silence, "", ""}, {Scale::Silence, "", ""} };
 
 };

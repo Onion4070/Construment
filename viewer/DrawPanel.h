@@ -39,11 +39,10 @@ private:
 	bool mod_n = false; // update left when true
 	bool mod_m = false; // update right when true
 
-	// current default notes (maintained on viewer side so we can update one side)
 	Scale::Note current_left = Scale::Silence;
 	Scale::Note current_right = Scale::Silence;
 
-	// per-note vertical positions (pixels) used for drawing; initialized in constructor
+	// per-note vertical positions used for drawing; initialized in constructor
 	const int noteHeight[Scale::COUNT] = {
 												 10,   9,   9,   8,
 		  7,   7,   6,   6,   5,   4,   4,   3,   3,   2,   2,   1,

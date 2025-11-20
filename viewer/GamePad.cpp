@@ -104,11 +104,6 @@ void GamePad::ReadLoop() {
 				continue;
 			}
 
-			//for (int i = 0; i < size; i++) {
-			//	std::cout << std::hex << std::setfill('0') << std::setw(2) << (int)controller_data[i] << " ";
-			//}
-			//std::cout << std::endl;
-
 			if (controller_data.size() < 3) {
 				std::cerr << "Controller data too small: " << controller_data.size() << std::endl;
 				continue;
@@ -156,7 +151,6 @@ std::array<uint8_t, 3> GamePad::DetectButtonReleased() {
 }
 
 // Accept default notes from the caller (DrawPanel) so the defaults are shared
-// Use references so this function can modify the caller's defaults (e.g. set to Silence on R3 press).
 std::vector<std::pair<NoteInfo, NoteInfo>> GamePad::GetInputStream(Scale::Note &default_left, Scale::Note &default_right) {
 	auto diff = DetectButtonPressed();
 	auto releaseDiff = DetectButtonReleased();
@@ -170,22 +164,19 @@ std::vector<std::pair<NoteInfo, NoteInfo>> GamePad::GetInputStream(Scale::Note &
 		default_left = Scale::Silence;
 		default_right = Scale::Silence;
 	}
-	// Compute semitone offset from adjust buttons (same logic as on device)
+
 	int semitone_offset = 0;
 	if (curr[2] & SwitchPro::Buttons2::ZL) semitone_offset -= 12;  // ZL: octave down
 	if (curr[2] & SwitchPro::Buttons2::L)  semitone_offset -= 1;   // L: semitone down
 	if (curr[0] & SwitchPro::Buttons0::R)  semitone_offset += 1;   // R: semitone up
 	if (curr[0] & SwitchPro::Buttons0::ZR) semitone_offset += 12;  // ZR: octave up
 
-	// build index string describing current adjust buttons (space-separated)
 	std::string idx = " ";
 	if (curr[2] & SwitchPro::Buttons2::ZL) idx += "ZL ";
 	if (curr[2] & SwitchPro::Buttons2::L)  idx += "L ";
 	if (curr[0] & SwitchPro::Buttons0::R)  idx += "R ";
 	if (curr[0] & SwitchPro::Buttons0::ZR) idx += "ZR ";
 
-	// Determine currently sounding note pair using the exact branching as the device
-	// We'll iterate the buttons in the same priority order (DPAD entries first), so the first match wins.
 	struct Btn { int byteIdx; uint8_t mask; Scale::Note base; const char* label; };
 	const Btn buttons[] = {
 		{2, SwitchPro::Buttons2::DPAD_UP,    Scale::C4, "↑"},
@@ -204,15 +195,12 @@ std::vector<std::pair<NoteInfo, NoteInfo>> GamePad::GetInputStream(Scale::Note &
 		if (curr[b.byteIdx] & b.mask) {
 			// first match wins (DPAD entries are listed first)
 			Scale::Note n = Scale::transpose(b.base, semitone_offset);
-			selectedInfo.note = n;
-			selectedInfo.label = std::string(b.label);
-			selectedInfo.indexStr = idx;
+			selectedInfo = { n, std::string(b.label), idx };
 			note_selected = true;
 			break;
 		}
 	}
 
-	// Build target pair: if a note button is held, use that (both sides same). Otherwise use passed-in defaults from DrawPanel
 	std::pair<NoteInfo, NoteInfo> target_pair;
 	if (note_selected) {
 		target_pair = std::make_pair(selectedInfo, selectedInfo);
@@ -222,13 +210,10 @@ std::vector<std::pair<NoteInfo, NoteInfo>> GamePad::GetInputStream(Scale::Note &
 		target_pair = std::make_pair(linfo, rinfo);
 	}
 
-	// If both sides are Silence, do not push; still update last_playing_pair to Silence
 	bool both_silence = (target_pair.first.note == Scale::Silence) && (target_pair.second.note == Scale::Silence);
 	if (both_silence) {
-		// record that we're now silent but don't push silence into the stream
 		last_playing_pair = target_pair;
 	} else {
-		// If the sounding pair changed compared to last_playing_pair, push it
 		bool changed = (target_pair.first.note != last_playing_pair.first.note) || (target_pair.second.note != last_playing_pair.second.note);
 		if (changed) {
 			input_stream.push_back(target_pair);
@@ -236,7 +221,6 @@ std::vector<std::pair<NoteInfo, NoteInfo>> GamePad::GetInputStream(Scale::Note &
 		}
 	}
 
-	// keep buffer bounded
 	if (input_stream.size() > 12) {
 		input_stream.erase(input_stream.begin(), input_stream.begin() + (input_stream.size() - 12));
 	}

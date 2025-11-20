@@ -20,7 +20,6 @@ bool App::OnInit() {
 		}
 	#endif
 
-	
 	// タイトル設定
 	MainFrame* mainFrame = new MainFrame("Construment App");
 
