@@ -255,3 +255,41 @@ void GamePad::SendDefaultNote(Scale::Note note_l, Scale::Note note_r) {
 		std::cout << "Error sending default note: " << e.what() << std::endl;
 	}
 }
+Scale::Note GamePad::MidiToScale(int midi_note) {
+	int semitone = midi_note - 60; // C4 = 60
+	return Scale::transpose(Scale::C4, semitone);
+}
+
+bool GamePad::LoadMidi(const std::string& path) {
+	if (midi.load(path)) {
+		std::cout << "MIDI file loaded: " << path << std::endl;
+		return true;
+	}
+
+	std::cout << "Failed to load MIDI file: " << path << std::endl;
+	return false;
+}
+
+void GamePad::PlayMidi() {
+	if (midiPlaying) {
+		std::cout << "MIDI is already playing." << std::endl;
+		return;
+	}
+	midi.reset();
+	midiPlaying = true;
+}
+
+void GamePad::StopMidi() {
+	if (!midiPlaying) {
+		std::cout << "MIDI is not playing." << std::endl;
+		return;
+	}
+	midiPlaying = false;
+	SendDefaultNote(Scale::Silence, Scale::Silence);
+}
+
+void GamePad::SendNotes(const ActiveNotes& notes) {
+	Scale::Note left = (notes.left >= 0) ? MidiToScale(notes.left) : Scale::Silence;
+	Scale::Note right = (notes.right >= 0) ? MidiToScale(notes.right) : Scale::Silence;
+	SendDefaultNote(left, right);
+}

@@ -75,7 +75,7 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\asio\include;$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;C:\wxWidgets\include;C:\wxWidgets\include\msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\asio\include;$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;C:\wxWidgets\include;C:\wxWidgets\include\msvc;C:\Works\Github\midifile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -93,7 +93,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\asio\include;$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;C:\wxWidgets\include;C:\wxWidgets\include\msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\asio\include;$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;C:\wxWidgets\include;C:\wxWidgets\include\msvc;C:\Works\Github\midifile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -111,7 +111,7 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\asio\include;$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;C:\wxWidgets\include;C:\wxWidgets\include\msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\asio\include;$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;C:\wxWidgets\include;C:\wxWidgets\include\msvc;C:\Works\Github\midifile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PreprocessorDefinitions>_WIN32_WINNT=0x0A00;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -130,7 +130,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\asio\include;$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;C:\wxWidgets\include;C:\wxWidgets\include\msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\asio\include;$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;C:\wxWidgets\include;C:\wxWidgets\include\msvc;C:\Works\Github\midifile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -148,7 +148,14 @@
     <ClCompile Include="DrawPanel.cpp" />
     <ClCompile Include="GamePad.cpp" />
     <ClCompile Include="MainFrame.cpp" />
+    <ClCompile Include="MidiPlayer.cpp" />
     <ClCompile Include="SerialUtils.cpp" />
+    <ClCompile Include="C:\midifile\src\Binasc.cpp" />
+    <ClCompile Include="C:\midifile\src\MidiEvent.cpp" />
+    <ClCompile Include="C:\midifile\src\MidiEventList.cpp" />
+    <ClCompile Include="C:\midifile\src\MidiFile.cpp" />
+    <ClCompile Include="C:\midifile\src\MidiMessage.cpp" />
+    <ClCompile Include="C:\midifile\src\Options.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -156,6 +163,7 @@
     <ClInclude Include="GamePad.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="MainFrame.h" />
+    <ClInclude Include="MidiPlayer.h" />
     <ClInclude Include="Scale.h" />
     <ClInclude Include="SerialUtils.h" />
   </ItemGroup>

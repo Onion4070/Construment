@@ -1,4 +1,5 @@
 ﻿#include "DrawPanel.h"
+#include "MIDIPlayer.h"
 #include "Scale.h"
 #include <cctype>
 
@@ -14,7 +15,6 @@ wxEND_EVENT_TABLE()
 wxPen blackPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
 wxPen bluePen(*wxBLUE, 2, wxPENSTYLE_SOLID); // 青色ペン，太さ2, 実線
 wxPen anyColorPen(wxColor(255, 100, 100), 5); // 任意の色(薄い赤)，太さ5
-
 
 DrawPanel::DrawPanel(wxWindow* parent)
 	: wxPanel(parent, wxID_ANY), 
@@ -115,6 +115,13 @@ void DrawPanel::ClearBackground(wxGCDC& gdc) {
 }
 
 void DrawPanel::OnTimer(wxTimerEvent& event) {
+	const double dt = 0.008; // 8ms
+
+	if (gamepad.IsConnected() && gamepad.midiPlaying) {
+		auto notes = gamepad.midi.update(dt);
+		if (gamepad.midi.EndPlaying()) gamepad.midiPlaying = false;
+		gamepad.SendNotes(notes);
+	}
 	Refresh();
 }
 

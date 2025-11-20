@@ -13,11 +13,17 @@ public:
 private:
 	void OnConnect(wxCommandEvent& event);
 	void OnRefresh(wxCommandEvent& event);
+	void OnLoad(wxCommandEvent& event);
+	void OnPlay(wxCommandEvent& event);
+	void OnStop(wxCommandEvent& event);
 	void RefreshComPorts();
 
 	DrawPanel* drawPanel;
 	wxChoice* comChoice;
 	wxButton* connectButton;
+	wxButton* loadButton;
+	wxButton* playButton;
+	wxButton* stopButton;
 	wxButton* refreshButton;
 
 	wxDECLARE_EVENT_TABLE();
