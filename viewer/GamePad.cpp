@@ -250,6 +250,13 @@ void GamePad::SendDefaultNote(Scale::Note note_l, Scale::Note note_r) {
 		std::lock_guard<std::mutex> wlock(serial_write_mtx);
 		asio::write(serial, asio::buffer(packet, sizeof(packet)));
 		std::cout << "Sent SendDefaultNote packet: " << std::hex << (int)packet[2] << " " << (int)packet[3] << " " << (int)packet[4] << std::dec << std::endl;
+
+		try {
+			if (defaultNoteCallback) defaultNoteCallback(note_l, note_r);
+		}
+		catch (const std::exception& cb_e) {
+			std::cout << "DefaultNote callback threw: " << cb_e.what() << std::endl;
+		}
 	}
 	catch (const std::exception& e) {
 		std::cout << "Error sending default note: " << e.what() << std::endl;

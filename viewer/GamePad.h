@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <asio.hpp>
 #include <wx/wx.h>
+#include <functional>
 #include "Scale.h"
 #include "globals.h"
 #include "MIDIPlayer.h"
@@ -38,6 +39,8 @@ public:
 	MIDIPlayer midi;
 	bool midiPlaying = false;
 
+	void SetDefaultNoteCallback(std::function<void(Scale::Note, Scale::Note)> cb) { defaultNoteCallback = std::move(cb); }
+
 private:
 	Scale::Note MidiToScale(int midi_note);
 	void ReadLoop();
@@ -59,6 +62,8 @@ private:
 	std::array<uint8_t, 3> prev = {0,0,0};
 	std::array<uint8_t, 3> curr = {0,0,0};
 	std::pair<NoteInfo, NoteInfo> last_playing_pair = { {Scale::Silence, "", ""}, {Scale::Silence, "", ""} };
+
+	std::function<void(Scale::Note, Scale::Note)> defaultNoteCallback;
 
 };
 
