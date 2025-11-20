@@ -67,14 +67,14 @@ void DrawPanel::OnKeyDown(wxKeyEvent& event) {
 	Scale::Note base = Scale::Silence;
 	bool isNote = true;
 	switch (key) {
-	case 'C': base = Scale::C4; break;
-	case 'D': base = Scale::D4; break;
-	case 'E': base = Scale::E4; break;
-	case 'F': base = Scale::F4; break;
-	case 'G': base = Scale::G4; break;
-	case 'A': base = Scale::A4; break;
-	case 'B': base = Scale::B4; break;
-	default: isNote = false; break;
+		case 'C': base = Scale::C4; break;
+		case 'D': base = Scale::D4; break;
+		case 'E': base = Scale::E4; break;
+		case 'F': base = Scale::F4; break;
+		case 'G': base = Scale::G4; break;
+		case 'A': base = Scale::A4; break;
+		case 'B': base = Scale::B4; break;
+		default: isNote = false; break;
 	}
 
 	if (isNote && gamepad.IsConnected()) {
@@ -132,8 +132,8 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<NoteInfo>& notes) {
 	wxPen buttonPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
 	gdc->SetPen(buttonPen);
 
-	const int baseX = 300; // left-to-right placement base
-	const int baseY = 250; // top-to-bottom placement base
+	const int baseX = 300;  // left-to-right placement base
+	const int baseY = 250;  // top-to-bottom placement base
 	const int spacing = 80; // horizontal spacing between notes
 	const int radius = 25;
 
@@ -160,7 +160,7 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<NoteInfo>& notes) {
 		if (noteIndex < 0) noteIndex = 0;
 		if (noteIndex >= (int)Scale::COUNT) noteIndex = (int)Scale::COUNT - 1;
 
-		int cy = staffOffset + baseY + noteHeight[noteIndex];
+		int cy = staffOffset + baseY + noteHeight[noteIndex] * radius;
 
 		int cx = baseX + spacing * (i - start);
 
@@ -173,10 +173,10 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<NoteInfo>& notes) {
 		if (note==Scale::C4 || note==Scale::Cs4) {
 			gdc->DrawLine(cx - halfLen, cy, cx + halfLen, cy);
 		} else if (note>=Scale::A5) {
-			int a5y = staffOffset + baseY + noteHeight[(int)Scale::A5];
+			int a5y = staffOffset + baseY + noteHeight[(int)Scale::A5] * radius;
 			gdc->DrawLine(cx - halfLen, a5y, cx + halfLen, a5y);
 			if (note>=Scale::C6) {
-				int c6y = staffOffset + baseY + noteHeight[(int)Scale::C6];
+				int c6y = staffOffset + baseY + noteHeight[(int)Scale::C6] * radius;
 				gdc->DrawLine(cx - halfLen, c6y, cx + halfLen, c6y);
 			}
 		}
