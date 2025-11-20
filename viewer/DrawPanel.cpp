@@ -128,7 +128,7 @@ void DrawPanel::DrawScoreLine(wxGCDC& gdc, int width = 50, int offset = 150) {
 }
 
 // notes: 描画するノートの配列 (NoteInfo)
-void DrawPanel::Draw(wxGCDC* gdc, const std::vector<NoteInfo>& notes) {
+void DrawPanel::Draw(wxGCDC* gdc, const std::vector<std::pair<NoteInfo, NoteInfo>>& notes) {
 	wxPen buttonPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
 	gdc->SetPen(buttonPen);
 
@@ -146,23 +146,30 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<NoteInfo>& notes) {
 	const int staffOffset = 150;  // same as DrawScoreLine default offset
 	const int staffSpacing = 50;  // same as DrawScoreLine default width (line spacing)
 
-	for (int i = start; i < total; i++) {
-		const auto& entry = notes[i];
+	// helper to determine if a note is sharp
+	auto isSharp = [](Scale::Note n) -> bool {
+		using Scale::Note;
+		switch (n) {
+															case Note::Gs2: case Note::As2:
+			case Note::Cs3: case Note::Ds3: case Note::Fs3: case Note::Gs3: case Note::As3:
+			case Note::Cs4: case Note::Ds4: case Note::Fs4: case Note::Gs4: case Note::As4:
+			case Note::Cs5: case Note::Ds5: case Note::Fs5: case Note::Gs5: case Note::As5:
+			case Note::Cs6: case Note::Ds6:
+				return true;
+			default:
+				return false;
+		}
+	};
+
+	auto drawSingle = [&](int cx, const NoteInfo& entry) {
 		Scale::Note note = entry.note;
-		const std::string& label = entry.label;
-		const std::string& idxStr = entry.indexStr;
+		if (note==Scale::Silence) return;
 
 		int fontSize = 30;
 		wxFont noteFont(fontSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
 		gdc->SetFont(noteFont);
 
-		int noteIndex = (int)note;
-		if (noteIndex < 0) noteIndex = 0;
-		if (noteIndex >= (int)Scale::COUNT) noteIndex = (int)Scale::COUNT - 1;
-
-		int cy = staffOffset + baseY + noteHeight[noteIndex] * radius;
-
-		int cx = baseX + spacing * (i - start);
+		int cy = staffOffset + baseY + noteHeight[note] * radius;
 
 		// draw ledger (補助線) behind the note (円の後ろに見えるように、円描画前に描画)
 		wxPen oldPen = gdc->GetPen();
@@ -185,27 +192,14 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<NoteInfo>& notes) {
 		gdc->SetPen(oldPen);
 		gdc->DrawCircle(cx, cy, radius);
 
+		// label
 		int tw, th;
-		gdc->GetTextExtent(label, &tw, &th);
+		gdc->GetTextExtent(entry.label, &tw, &th);
 		int tx = cx - tw / 2;
 		int ty = cy - th / 2;
-		gdc->DrawText(label, tx, ty);
+		gdc->DrawText(entry.label, tx, ty);
 
-		// if the note is a sharp, draw a '#' to the right of the circle
-		auto isSharp = [](Scale::Note n) -> bool {
-			using Scale::Note;
-			switch (n) {
-																case Note::Gs2: case Note::As2:
-				case Note::Cs3: case Note::Ds3: case Note::Fs3: case Note::Gs3: case Note::As3:
-				case Note::Cs4: case Note::Ds4: case Note::Fs4: case Note::Gs4: case Note::As4:
-				case Note::Cs5: case Note::Ds5: case Note::Fs5: case Note::Gs5: case Note::As5:
-				case Note::Cs6: case Note::Ds6:
-					return true;
-				default:
-					return false;
-			}
-		};
-
+		// sharp mark
 		if (isSharp(note)) {
 			std::string sharp = "#";
 			int ssw, ssh;
@@ -215,18 +209,32 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<NoteInfo>& notes) {
 			gdc->DrawText(sharp, shx, shy);
 		}
 
-		// draw index string under the circle (as subscript)
-		if (!idxStr.empty()) {
+		// index string (subscript)
+		if (!entry.indexStr.empty()) {
 			int idxFontSize = 14;
 			wxFont idxFont(idxFontSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
 			gdc->SetFont(idxFont);
 			int itw, ith;
-			gdc->GetTextExtent(idxStr, &itw, &ith);
+			gdc->GetTextExtent(entry.indexStr, &itw, &ith);
 			int itx = cx - itw / 2;
 			int ity = cy + radius + 4; // small padding below the circle
-			gdc->DrawText(idxStr, itx, ity);
-			// restore main font for next iteration
+			gdc->DrawText(entry.indexStr, itx, ity);
 			gdc->SetFont(noteFont);
+		}
+	};
+
+	for (int i = start; i < total; i++) {
+		const auto& pairEntry = notes[i];
+		const NoteInfo& left = pairEntry.first;
+		const NoteInfo& right = pairEntry.second;
+
+		int cx = baseX + spacing * (i - start);
+
+		if (left.note == right.note) {
+			drawSingle(cx, left);
+		} else {
+			drawSingle(cx, left);
+			drawSingle(cx, right);
 		}
 	}
 }

@@ -22,7 +22,7 @@ private:
 	void OnPaint(wxPaintEvent& event);
 	void ClearBackground(wxGCDC& gdc);
 	void DrawScoreLine(wxGCDC& gdc, int width, int offset);
-	void Draw(wxGCDC* gdc, const std::vector<NoteInfo>& notes);
+	void Draw(wxGCDC* gdc, const std::vector<std::pair<NoteInfo, NoteInfo>>& notes);
 	void OnTimer(wxTimerEvent& event);
 
 	wxBitmap svgBitmapTreble; // SVG画像を保持するビットマップ
