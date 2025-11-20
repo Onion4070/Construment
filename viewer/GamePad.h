@@ -22,6 +22,7 @@ public:
 	void SendDefaultNote(Scale::Note note_l, Scale::Note note_r);
 	bool LoadMidi(const std::string& path);
 	void PlayMidi();
+	void StopMidi();
 	void SendNotes(const ActiveNotes& notes);
 	MIDIPlayer midi;
 	bool midiPlaying = false;

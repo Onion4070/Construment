@@ -141,7 +141,21 @@ bool GamePad::LoadMidi(const std::string& path) {
 }
 
 void GamePad::PlayMidi() {
+	if (midiPlaying) {
+		cout << "MIDI is already playing." << endl;
+		return;
+	}
+	midi.reset();
 	midiPlaying = true;
+}
+
+void GamePad::StopMidi() {
+	if (!midiPlaying) {
+		cout << "MIDI is not playing." << endl;
+		return;
+	}
+	midiPlaying = false;
+	SendDefaultNote(Scale::Silence, Scale::Silence);
 }
 
 void GamePad::SendNotes(const ActiveNotes& notes) {

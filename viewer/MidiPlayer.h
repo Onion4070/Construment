@@ -15,6 +15,8 @@ public:
 
     // dt_sec: 経過秒数 (timer から渡す)
     ActiveNotes update(double dt_sec);
+    void reset();
+    bool EndPlaying() { return end; };
 
 private:
     struct Event {
@@ -30,4 +32,5 @@ private:
 
 	int left_current = -1;
 	int right_current = -1;
+    bool end = false;
 };

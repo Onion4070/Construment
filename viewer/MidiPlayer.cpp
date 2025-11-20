@@ -59,6 +59,15 @@ ActiveNotes MIDIPlayer::update(double dt_sec) {
 
         index++;
     }
+	if (index == events.size()) end = true;
 
     return { left_current, right_current };
+}
+
+void MIDIPlayer::reset() {
+    index = 0;
+    curTime = 0;
+    left_current = -1;
+    right_current = -1;
+	end = false;
 }

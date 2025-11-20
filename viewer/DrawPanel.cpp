@@ -119,6 +119,7 @@ void DrawPanel::OnTimer(wxTimerEvent& event) {
 
 	if (gamepad.IsConnected() && gamepad.midiPlaying) {
 		auto notes = gamepad.midi.update(dt);
+		if (gamepad.midi.EndPlaying()) gamepad.midiPlaying = false;
 		gamepad.SendNotes(notes);
 	}
 	Refresh();

@@ -22,6 +22,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	refreshButton = new wxButton(topPanel, wxID_ANY, "Refresh");
 	loadButton = new wxButton(topPanel, wxID_ANY, "Load");
 	playButton = new wxButton(topPanel, wxID_ANY, "Play");
+	stopButton = new wxButton(topPanel, wxID_ANY, "Stop");
 
 	RefreshComPorts();
 
@@ -30,6 +31,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	topSizer->Add(refreshButton, 0, wxEXPAND | wxLEFT);
 	topSizer->Add(loadButton, 0, wxEXPAND | wxLEFT);
 	topSizer->Add(playButton, 0, wxEXPAND | wxLEFT);
+	topSizer->Add(stopButton, 0, wxEXPAND | wxLEFT);
 
 	topPanel->SetSizer(topSizer);
 
@@ -42,6 +44,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	refreshButton->Bind(wxEVT_BUTTON, &MainFrame::OnRefresh, this);
 	loadButton->Bind(wxEVT_BUTTON, &MainFrame::OnLoad, this);
 	playButton->Bind(wxEVT_BUTTON, &MainFrame::OnPlay, this);
+	stopButton->Bind(wxEVT_BUTTON, &MainFrame::OnStop, this);
 }
 
 void MainFrame::RefreshComPorts() {
@@ -96,4 +99,10 @@ void MainFrame::OnPlay(wxCommandEvent& event) {
 		return;
 	}
 	drawPanel->gamepad.PlayMidi();
+}
+
+void MainFrame::OnStop(wxCommandEvent& event) {
+	if (drawPanel->gamepad.IsConnected()) {
+		drawPanel->gamepad.StopMidi();
+	}
 }
