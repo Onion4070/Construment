@@ -37,6 +37,14 @@ DrawPanel::DrawPanel(wxWindow* parent)
 
 	// パネルがキー入力を受け取れるようにフォーカスを要求
 	this->SetFocus();
+
+	gamepad.SetDefaultNoteCallback([this](Scale::Note l, Scale::Note r) {
+		this->CallAfter([this, l, r]() {
+			current_left = l;
+			current_right = r;
+			this->Refresh();
+		});
+	});
 }
 
 // キー押下イベントハンドラ

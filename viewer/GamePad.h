@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <asio.hpp>
 #include <wx/wx.h>
+#include <functional>
 #include "Scale.h"
 #include "globals.h"
 #include <atomic>
@@ -31,6 +32,8 @@ public:
 	// note_l / note_r are values from Scale::Note (stored as uint8_t).
 	void SendDefaultNote(Scale::Note note_l, Scale::Note note_r);
 
+	void SetDefaultNoteCallback(std::function<void(Scale::Note, Scale::Note)> cb) { defaultNoteCallback = std::move(cb); }
+
 private:
 	void ReadLoop();
 	asio::io_context io;
@@ -51,6 +54,8 @@ private:
 	std::array<uint8_t, 3> prev = {0,0,0};
 	std::array<uint8_t, 3> curr = {0,0,0};
 	std::pair<NoteInfo, NoteInfo> last_playing_pair = { {Scale::Silence, "", ""}, {Scale::Silence, "", ""} };
+
+	std::function<void(Scale::Note, Scale::Note)> defaultNoteCallback;
 
 };
 
