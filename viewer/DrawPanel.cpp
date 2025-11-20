@@ -28,9 +28,9 @@ DrawPanel::DrawPanel(wxWindow* parent)
 	wxString path_treble = wxT("assets/treble.svg");
 	wxString path_bass   = wxT("assets/bass.svg");
 	
-	wxBitmapBundle bundle_treble = wxBitmapBundle::FromSVGFile(path_treble, wxSize(300, 300));
+	wxBitmapBundle bundle_treble = wxBitmapBundle::FromSVGFile(path_treble, wxSize(330, 330));
 	wxBitmapBundle bundle_bass   = wxBitmapBundle::FromSVGFile(path_bass, wxSize(150, 150));
-	svgBitmapTreble = bundle_treble.GetBitmap(wxSize(300, 300));
+	svgBitmapTreble = bundle_treble.GetBitmap(wxSize(330, 330));
 	svgBitmapBass   = bundle_bass.GetBitmap(wxSize(150, 150));
 
 	refresh_timer.Start(8);
@@ -67,14 +67,14 @@ void DrawPanel::OnKeyDown(wxKeyEvent& event) {
 	Scale::Note base = Scale::Silence;
 	bool isNote = true;
 	switch (key) {
-	case 'C': base = Scale::C4; break;
-	case 'D': base = Scale::D4; break;
-	case 'E': base = Scale::E4; break;
-	case 'F': base = Scale::F4; break;
-	case 'G': base = Scale::G4; break;
-	case 'A': base = Scale::A4; break;
-	case 'B': base = Scale::B4; break;
-	default: isNote = false; break;
+		case 'C': base = Scale::C4; break;
+		case 'D': base = Scale::D4; break;
+		case 'E': base = Scale::E4; break;
+		case 'F': base = Scale::F4; break;
+		case 'G': base = Scale::G4; break;
+		case 'A': base = Scale::A4; break;
+		case 'B': base = Scale::B4; break;
+		default: isNote = false; break;
 	}
 
 	if (isNote && gamepad.IsConnected()) {
@@ -119,10 +119,122 @@ void DrawPanel::OnTimer(wxTimerEvent& event) {
 }
 
 // 五線の描画(上下同時に描画)
-void DrawPanel::DrawScoreLine(wxGCDC& gdc, int width = 50, int offset = 50) {
+void DrawPanel::DrawScoreLine(wxGCDC& gdc, int width = 50, int offset = 150) {
+	gdc.SetPen(blackPen);
 	for (int i = 0; i < 11; i++) {
 		if (i == 5) continue; // 上下の五線の間の線は描画しない
 		gdc.DrawLine(0, offset + width*i, this->GetSize().GetWidth(), offset + width*i);
+	}
+}
+
+// notes: 描画するノートの配列 (NoteInfo)
+void DrawPanel::Draw(wxGCDC* gdc, const std::vector<std::pair<NoteInfo, NoteInfo>>& notes) {
+	wxPen buttonPen(*wxBLACK, 2, wxPENSTYLE_SOLID);
+	gdc->SetPen(buttonPen);
+
+	const int baseX = 300;  // left-to-right placement base
+	const int baseY = 250;  // top-to-bottom placement base
+	const int spacing = 80; // horizontal spacing between notes
+	const int radius = 25;
+
+	int drawCount = 12;
+	int total = (int)notes.size();
+	if (total == 0) return;
+	int start = total - drawCount;
+	if (start < 0) start = 0;
+
+	const int staffOffset = 150;  // same as DrawScoreLine default offset
+	const int staffSpacing = 50;  // same as DrawScoreLine default width (line spacing)
+
+	// helper to determine if a note is sharp
+	auto isSharp = [](Scale::Note n) -> bool {
+		using Scale::Note;
+		switch (n) {
+															case Note::Gs2: case Note::As2:
+			case Note::Cs3: case Note::Ds3: case Note::Fs3: case Note::Gs3: case Note::As3:
+			case Note::Cs4: case Note::Ds4: case Note::Fs4: case Note::Gs4: case Note::As4:
+			case Note::Cs5: case Note::Ds5: case Note::Fs5: case Note::Gs5: case Note::As5:
+			case Note::Cs6: case Note::Ds6:
+				return true;
+			default:
+				return false;
+		}
+	};
+
+	auto drawSingle = [&](int cx, const NoteInfo& entry) {
+		Scale::Note note = entry.note;
+		if (note==Scale::Silence) return;
+
+		int fontSize = 30;
+		wxFont noteFont(fontSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
+		gdc->SetFont(noteFont);
+
+		int cy = staffOffset + baseY + noteHeight[note] * radius;
+
+		// draw ledger (補助線) behind the note (円の後ろに見えるように、円描画前に描画)
+		wxPen oldPen = gdc->GetPen();
+		wxPen ledgerPen(*wxBLACK, 3, wxPENSTYLE_SOLID);
+		gdc->SetPen(ledgerPen);
+
+		int halfLen = radius + 8; // 線の半分の長さ（必要なら調整可）
+		if (note==Scale::C4 || note==Scale::Cs4) {
+			gdc->DrawLine(cx - halfLen, cy, cx + halfLen, cy);
+		} else if (note>=Scale::A5) {
+			int a5y = staffOffset + baseY + noteHeight[(int)Scale::A5] * radius;
+			gdc->DrawLine(cx - halfLen, a5y, cx + halfLen, a5y);
+			if (note>=Scale::C6) {
+				int c6y = staffOffset + baseY + noteHeight[(int)Scale::C6] * radius;
+				gdc->DrawLine(cx - halfLen, c6y, cx + halfLen, c6y);
+			}
+		}
+
+		gdc->SetPen(oldPen);
+		gdc->DrawCircle(cx, cy, radius);
+
+		// label
+		int tw, th;
+		gdc->GetTextExtent(entry.label, &tw, &th);
+		int tx = cx - tw / 2;
+		int ty = cy - th / 2;
+		gdc->DrawText(entry.label, tx, ty);
+
+		// sharp mark
+		if (isSharp(note)) {
+			std::string sharp = "#";
+			int ssw, ssh;
+			gdc->GetTextExtent(sharp, &ssw, &ssh);
+			int shx = cx - radius - ssw - 6;
+			int shy = cy - ssh / 2;
+			gdc->DrawText(sharp, shx, shy);
+		}
+
+		// index string (subscript)
+		if (!entry.indexStr.empty()) {
+			int idxFontSize = 14;
+			wxFont idxFont(idxFontSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
+			gdc->SetFont(idxFont);
+			int itw, ith;
+			gdc->GetTextExtent(entry.indexStr, &itw, &ith);
+			int itx = cx - itw / 2;
+			int ity = cy + radius + 4; // small padding below the circle
+			gdc->DrawText(entry.indexStr, itx, ity);
+			gdc->SetFont(noteFont);
+		}
+	};
+
+	for (int i = start; i < total; i++) {
+		const auto& pairEntry = notes[i];
+		const NoteInfo& left = pairEntry.first;
+		const NoteInfo& right = pairEntry.second;
+
+		int cx = baseX + spacing * (i - start);
+
+		if (left.note == right.note) {
+			drawSingle(cx, left);
+		} else {
+			drawSingle(cx, left);
+			drawSingle(cx, right);
+		}
 	}
 }
 
@@ -130,31 +242,20 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	wxAutoBufferedPaintDC dc(this);
 	wxGCDC gdc(dc);
 	ClearBackground(gdc);
-
-	gdc.SetPen(blackPen);
 	DrawScoreLine(gdc);
 
-	gdc.DrawCircle(300, 100, 50); // 中心(300, 100), 半径50の円を描画
-
-	// 正八角形を描画
-	gdc.SetPen(anyColorPen);
-	wxPoint points[8];
-	for (int i = 0; i < 8; i++) {
-		double angle = i * (2 * 3.14159 / 8); // 角度を計算
-		points[i] = wxPoint(500 + 50 * cos(angle), 100 + 50 * sin(angle)); // 中心(500, 100), 半径50
-	}
-	gdc.DrawPolygon(8, points);
-
-	gdc.DrawBitmap(svgBitmapTreble, 50, 20, true); // ト音記号
-	gdc.DrawBitmap(svgBitmapBass, 50, 350, true); // ヘ音記号
+	gdc.DrawBitmap(svgBitmapTreble, 50, 98, true); // ト音記号
+	gdc.DrawBitmap(svgBitmapBass, 50, 450, true);  // ヘ音記号
 
 	// テキスト描画
 	wxFont font(75, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
 	gdc.SetFont(font);
 	wxString info = wxString::Format("Vol. %d", GetSize().GetWidth()); // 仮
-	gdc.DrawText(info, GetSize().GetHeight()/2, 550); // テキスト描画
+	gdc.DrawText(info, GetSize().GetHeight()/2, 650); // テキスト描画
 
 	auto gamepad_state = gamepad.GetGamePad();
-	if (gamepad_state.empty() || !gamepad.IsConnected()) return;
-	// cout << (int)gamepad_state[3] << endl;
+	if (!gamepad.IsConnected()) return;
+	gamepad.Update();
+	auto buf = gamepad.GetInputStream(current_left, current_right);
+	Draw(&gdc, buf);
 }

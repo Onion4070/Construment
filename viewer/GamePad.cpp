@@ -3,6 +3,33 @@
 #include "GamePad.h"
 #include "Scale.h"
 
+namespace SwitchPro {
+	namespace Buttons0 {
+		static constexpr uint8_t Y = 0x01;
+		static constexpr uint8_t X = 0x02;
+		static constexpr uint8_t B = 0x04;
+		static constexpr uint8_t A = 0x08;
+		static constexpr uint8_t R = 0x40;
+		static constexpr uint8_t ZR = 0x80;
+	}
+	namespace Buttons1 {
+		static constexpr uint8_t MINUS = 0x01;
+		static constexpr uint8_t PLUS = 0x02;
+		static constexpr uint8_t R3 = 0x04;
+		static constexpr uint8_t L3 = 0x08;
+		static constexpr uint8_t HOME = 0x10;
+		static constexpr uint8_t CAPTURE = 0x20;
+	}
+	namespace Buttons2 {
+		static constexpr uint8_t DPAD_DOWN = 0x01;
+		static constexpr uint8_t DPAD_UP = 0x02;
+		static constexpr uint8_t DPAD_RIGHT = 0x04;
+		static constexpr uint8_t DPAD_LEFT = 0x08;
+		static constexpr uint8_t L = 0x40;
+		static constexpr uint8_t ZL = 0x80;
+	}
+}
+
 GamePad::GamePad() : serial(io){
 	
 }
@@ -12,8 +39,8 @@ GamePad::~GamePad() {
 }
 
 void GamePad::Connect(const std::string& portName) {
-	if (connected) {
-		cout << "Already connected." << endl;
+	if (connected.load()) {
+		std::cout << "Already connected." << std::endl;
 		return;
 	}
 
@@ -27,21 +54,22 @@ void GamePad::Connect(const std::string& portName) {
 		serial.set_option(asio::serial_port_base::flow_control(asio::serial_port_base::flow_control::none));
 
 		// 別スレッドで実行
-		ioThread = std::thread([this]() { 
+		ioThread = std::thread([this]() {
 			ReadLoop();
 		});
 
-		connected = true;
-		cout << "Connected to " << portName << endl;
+		connected.store(true);
+		std::cout << "Connected to " << portName << std::endl;
+		SendDefaultNote(Scale::Silence, Scale::Silence);
 	}
 	catch (std::exception& e) {
-		cout << "Error connecting to " << portName << ": " << e.what() << endl;
-		connected = false;
+		std::cout << "Error connecting to " << portName << ": " << e.what() << std::endl;
+		connected.store(false);
 	}
 }
 
 void GamePad::Disconnect() {
-	if (!connected) {
+	if (!connected.load()) {
 		return;
 	}
 	try {
@@ -49,20 +77,20 @@ void GamePad::Disconnect() {
 		if (ioThread.joinable()) {
 			ioThread.join();
 		}
-		connected = false;
-		cout << "Disconnected." << endl;
+		connected.store(false);
+		std::cout << "Disconnected." << std::endl;
 	}
 	catch (std::exception& e) {
-		cout << "Error during disconnect: " << e.what() << endl;
+		std::cout << "Error during disconnect: " << e.what() << std::endl;
 	}
 }
 
 void GamePad::ReadLoop() {
-	while (connected) {
+	while (connected.load()) {
 		try {
 			uint8_t current_byte;
 			asio::read(serial, asio::buffer(&current_byte, 1));
-			if (current_byte != start_byte) continue;
+			if (current_byte != START_BYTE) continue;
 
 			uint8_t size;
 			asio::read(serial, asio::buffer(&size, 1));
@@ -71,57 +99,159 @@ void GamePad::ReadLoop() {
 
 			asio::read(serial, asio::buffer(&current_byte, 1));
 
-			if (current_byte != end_byte) {
-				cerr << "Invalid end byte" << endl;
+			if (current_byte != END_BYTE) {
+				std::cerr << "Invalid end byte" << std::endl;
 				continue;
 			}
 
-			//for (int i = 0; i < size; i++) {
-			//	cout << std::hex << std::setfill('0') << std::setw(2) << (int)controller_data[i] << " ";
-			//}
-			//cout << endl;
+			if (controller_data.size() < 3) {
+				std::cerr << "Controller data too small: " << controller_data.size() << std::endl;
+				continue;
+			}
 
 			std::lock_guard<std::mutex> lock(mtx);
-			gamepad = controller_data;
+			gamepad[0] = controller_data[0];
+			gamepad[1] = controller_data[1];
+			gamepad[2] = controller_data[2];
 		}
 		catch (std::exception& e) {
-			cerr << "Serial port read error" << e.what() << endl;
-			connected = false;
+			std::cerr << "Serial port read error" << e.what() << std::endl;
+			connected.store(false);
 		}
 	}
 }
 
-std::vector<uint8_t> GamePad::GetGamePad() {
+std::array<uint8_t, 3> GamePad::GetGamePad() {
 	std::lock_guard<std::mutex> lock(mtx);
 	return gamepad;
 }
 
-void GamePad::SendDefaultNote(Scale::Note note_l, Scale::Note note_r) {
-	if (!connected) {
-		cout << "Not connected, cannot send default note." << endl;
-		return;
+void GamePad::Update() {
+	std::lock_guard<std::mutex> lock(mtx);
+	prev = curr;
+	curr = gamepad;
+}
+
+std::array<uint8_t, 3> GamePad::DetectButtonPressed() {
+	std::array<uint8_t, 3> diff = {0,0,0};
+	for (int i = 0; i < 3; i++) {
+		// rising edge: prev=0, curr=1
+		diff[i] = static_cast<uint8_t>((prev[i] ^ curr[i]) & curr[i]);
+	}
+	return diff;
+}
+
+std::array<uint8_t, 3> GamePad::DetectButtonReleased() {
+	std::array<uint8_t, 3> diff = {0,0,0};
+	for (int i = 0; i < 3; i++) {
+		// falling edge: prev=1, curr=0
+		diff[i] = static_cast<uint8_t>((prev[i] ^ curr[i]) & prev[i]);
+	}
+	return diff;
+}
+
+// Accept default notes from the caller (DrawPanel) so the defaults are shared
+std::vector<std::pair<NoteInfo, NoteInfo>> GamePad::GetInputStream(Scale::Note &default_left, Scale::Note &default_right) {
+	auto diff = DetectButtonPressed();
+	auto releaseDiff = DetectButtonReleased();
+
+	if (diff[1] & SwitchPro::Buttons1::L3) {
+		input_stream.clear();
+		return input_stream;
+	}
+	// If R3 is currently held, set the shared defaults to Silence (matches device behavior)
+	if (curr[1] & SwitchPro::Buttons1::R3) {
+		default_left = Scale::Silence;
+		default_right = Scale::Silence;
 	}
 
-	// Build packet: start, size, cmd, note_l, note_r, end
-	const uint8_t start_byte = 0xAA;
-	const uint8_t end_byte = 0xBB;
+	int semitone_offset = 0;
+	if (curr[2] & SwitchPro::Buttons2::ZL) semitone_offset -= 12;  // ZL: octave down
+	if (curr[2] & SwitchPro::Buttons2::L)  semitone_offset -= 1;   // L: semitone down
+	if (curr[0] & SwitchPro::Buttons0::R)  semitone_offset += 1;   // R: semitone up
+	if (curr[0] & SwitchPro::Buttons0::ZR) semitone_offset += 12;  // ZR: octave up
+
+	std::string idx = " ";
+	if (curr[2] & SwitchPro::Buttons2::ZL) idx += "ZL ";
+	if (curr[2] & SwitchPro::Buttons2::L)  idx += "L ";
+	if (curr[0] & SwitchPro::Buttons0::R)  idx += "R ";
+	if (curr[0] & SwitchPro::Buttons0::ZR) idx += "ZR ";
+
+	struct Btn { int byteIdx; uint8_t mask; Scale::Note base; const char* label; };
+	const Btn buttons[] = {
+		{2, SwitchPro::Buttons2::DPAD_UP,    Scale::C4, "↑"},
+		{2, SwitchPro::Buttons2::DPAD_LEFT,  Scale::D4, "←"},
+		{2, SwitchPro::Buttons2::DPAD_DOWN,  Scale::E4, "↓"},
+		{2, SwitchPro::Buttons2::DPAD_RIGHT, Scale::F4, "→"},
+		{0, SwitchPro::Buttons0::X,          Scale::G4, "X"},
+		{0, SwitchPro::Buttons0::A,          Scale::A4, "A"},
+		{0, SwitchPro::Buttons0::B,          Scale::B4, "B"},
+		{0, SwitchPro::Buttons0::Y,          Scale::C5, "Y"}
+	};
+
+	bool note_selected = false;
+	NoteInfo selectedInfo{Scale::Silence, "", idx};
+	for (const auto &b : buttons) {
+		if (curr[b.byteIdx] & b.mask) {
+			// first match wins (DPAD entries are listed first)
+			Scale::Note n = Scale::transpose(b.base, semitone_offset);
+			selectedInfo = { n, std::string(b.label), idx };
+			note_selected = true;
+			break;
+		}
+	}
+
+	std::pair<NoteInfo, NoteInfo> target_pair;
+	if (note_selected) {
+		target_pair = std::make_pair(selectedInfo, selectedInfo);
+	} else {
+		NoteInfo linfo{ default_left, "", "" };
+		NoteInfo rinfo{ default_right, "", "" };
+		target_pair = std::make_pair(linfo, rinfo);
+	}
+
+	bool both_silence = (target_pair.first.note == Scale::Silence) && (target_pair.second.note == Scale::Silence);
+	if (both_silence) {
+		last_playing_pair = target_pair;
+	} else {
+		bool changed = (target_pair.first.note != last_playing_pair.first.note) || (target_pair.second.note != last_playing_pair.second.note);
+		if (changed) {
+			input_stream.push_back(target_pair);
+			last_playing_pair = target_pair;
+		}
+	}
+
+	if (input_stream.size() > 12) {
+		input_stream.erase(input_stream.begin(), input_stream.begin() + (input_stream.size() - 12));
+	}
+
+	return input_stream;
+}
+
+void GamePad::SendDefaultNote(Scale::Note note_l, Scale::Note note_r) {
+	if (!connected.load()) {
+		std::cout << "Not connected, cannot send default note." << std::endl;
+		return;
+	}
+	// Build packet: START_BYTE, size, cmd, note_l, note_r, END_BYTE
 	const uint8_t cmd_set_default = 0x01;
 	const uint8_t payload_size = 3; // cmd + note_l + note_r
 
 	uint8_t packet[6];
-	packet[0] = start_byte;
+	packet[0] = START_BYTE;
 	packet[1] = payload_size;
 	packet[2] = cmd_set_default;
 	packet[3] = static_cast<uint8_t>(note_l);
 	packet[4] = static_cast<uint8_t>(note_r);
-	packet[5] = end_byte;
+	packet[5] = END_BYTE;
 
 	try {
-		// Write synchronously to serial port
+		// protect concurrent writes to the serial port
+		std::lock_guard<std::mutex> wlock(serial_write_mtx);
 		asio::write(serial, asio::buffer(packet, sizeof(packet)));
-		cout << "Sent SendDefaultNote packet: " << std::hex << (int)packet[2] << " " << (int)packet[3] << " " << (int)packet[4] << std::dec << endl;
+		std::cout << "Sent SendDefaultNote packet: " << std::hex << (int)packet[2] << " " << (int)packet[3] << " " << (int)packet[4] << std::dec << std::endl;
 	}
 	catch (const std::exception& e) {
-		cout << "Error sending default note: " << e.what() << endl;
+		std::cout << "Error sending default note: " << e.what() << std::endl;
 	}
 }
