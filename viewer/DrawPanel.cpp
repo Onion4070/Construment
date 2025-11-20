@@ -257,6 +257,6 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	auto gamepad_state = gamepad.GetGamePad();
 	if (!gamepad.IsConnected()) return;
 	gamepad.Update();
-	auto buf = gamepad.GetInputStream();
+	auto buf = gamepad.GetInputStream(current_left, current_right);
 	Draw(&gdc, buf);
 }

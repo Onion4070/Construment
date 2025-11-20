@@ -18,7 +18,9 @@ public:
 	~GamePad();
 	std::array<uint8_t, 3> GetGamePad();
 	void Update();
-	std::vector<std::pair<NoteInfo, NoteInfo>> GetInputStream();
+	// Provide current default notes (from DrawPanel) so defaults are shared between viewer and GamePad.
+	// Pass by reference so GamePad can modify the defaults (e.g. set to Silence when R3 is pressed).
+	std::vector<std::pair<NoteInfo, NoteInfo>> GetInputStream(Scale::Note &default_left, Scale::Note &default_right);
 	std::array<uint8_t, 3> DetectButtonPressed();
 	std::array<uint8_t, 3> DetectButtonReleased();
 
@@ -50,6 +52,8 @@ private:
 
 	std::array<uint8_t, 3> prev = {0,0,0};
 	std::array<uint8_t, 3> curr = {0,0,0};
+	// last pair that was considered "playing" (used to detect changes)
+	std::pair<NoteInfo, NoteInfo> last_playing_pair = { {Scale::Silence, "", ""}, {Scale::Silence, "", ""} };
 
 };
 
