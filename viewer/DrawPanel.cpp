@@ -37,6 +37,18 @@ DrawPanel::DrawPanel(wxWindow* parent)
 
 	// パネルがキー入力を受け取れるようにフォーカスを要求
 	this->SetFocus();
+
+	// デフォルトのノートカラーを設定 (左, 右, 両方)
+	leftNoteColor = *wxGREEN;
+	rightNoteColor = *wxRED;
+	bothNoteColor = wxColour(0, 0, 0);
+}
+
+// 色セッター実装
+void DrawPanel::SetNoteColors(const wxColour& left, const wxColour& right, const wxColour& both) {
+	leftNoteColor = left;
+	rightNoteColor = right;
+	bothNoteColor = both;
 }
 
 // キー押下イベントハンドラ
@@ -187,7 +199,7 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<std::pair<NoteInfo, NoteInfo
 		}
 	};
 
-	auto drawSingle = [&](int cx, const NoteInfo& entry) {
+	auto drawSingle = [&](int cx, const NoteInfo& entry, const wxColour& outlineColor) {
 		Scale::Note note = entry.note;
 		if (note==Scale::Silence) return;
 
@@ -215,16 +227,24 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<std::pair<NoteInfo, NoteInfo
 		}
 
 		gdc->SetPen(oldPen);
-		gdc->DrawCircle(cx, cy, radius);
 
-		// label
+		// 円は塗りつぶさず、縁の色だけを変更して描画
+		wxPen beforePen = gdc->GetPen();
+		wxPen outlinePen(outlineColor, 2, wxPENSTYLE_SOLID);
+		gdc->SetPen(outlinePen);
+		gdc->DrawCircle(cx, cy, radius);
+		gdc->SetPen(beforePen);
+
+		// label (文字色は黒)
+		wxColour oldText = gdc->GetTextForeground();
+		gdc->SetTextForeground(*wxBLACK);
 		int tw, th;
 		gdc->GetTextExtent(entry.label, &tw, &th);
 		int tx = cx - tw / 2;
 		int ty = cy - th / 2;
 		gdc->DrawText(entry.label, tx, ty);
 
-		// sharp mark
+		// sharp mark (シャープ記号は黒で描画)
 		if (isSharp(note)) {
 			std::string sharp = "#";
 			int ssw, ssh;
@@ -246,6 +266,8 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<std::pair<NoteInfo, NoteInfo
 			gdc->DrawText(entry.indexStr, itx, ity);
 			gdc->SetFont(noteFont);
 		}
+		// restore text foreground
+		gdc->SetTextForeground(oldText);
 	};
 
 	for (int i = start; i < total; i++) {
@@ -256,10 +278,10 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<std::pair<NoteInfo, NoteInfo
 		int cx = baseX + spacing * (i - start);
 
 		if (left.note == right.note) {
-			drawSingle(cx, left);
+			drawSingle(cx, left, bothNoteColor);
 		} else {
-			drawSingle(cx, left);
-			drawSingle(cx, right);
+			drawSingle(cx, left, leftNoteColor);
+			drawSingle(cx, right, rightNoteColor);
 		}
 	}
 }
