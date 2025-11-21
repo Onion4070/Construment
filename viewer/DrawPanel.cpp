@@ -136,10 +136,8 @@ void DrawPanel::ClearBackground(wxGCDC& gdc) {
 }
 
 void DrawPanel::OnTimer(wxTimerEvent& event) {
-	const double dt = 0.008; // 8ms
-
 	if (gamepad.IsConnected() && gamepad.midiPlaying) {
-		auto notes = gamepad.midi.update(dt);
+		auto notes = gamepad.midi.update();
 		if (gamepad.midi.EndPlaying()) gamepad.midiPlaying = false;
 		gamepad.SendNotes(notes);
 	}

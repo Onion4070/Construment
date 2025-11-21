@@ -23,6 +23,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	loadButton = new wxButton(topPanel, wxID_ANY, "Load");
 	playButton = new wxButton(topPanel, wxID_ANY, "Play");
 	stopButton = new wxButton(topPanel, wxID_ANY, "Stop");
+	plusButton = new wxButton(topPanel, wxID_ANY, "Tempo +");
+	minusButton = new wxButton(topPanel, wxID_ANY, "Tempo -");
 
 	RefreshComPorts();
 
@@ -32,6 +34,9 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	topSizer->Add(loadButton, 0, wxEXPAND | wxLEFT);
 	topSizer->Add(playButton, 0, wxEXPAND | wxLEFT);
 	topSizer->Add(stopButton, 0, wxEXPAND | wxLEFT);
+	topSizer->Add(minusButton, 0,wxEXPAND | wxLEFT);
+	topSizer->Add(plusButton, 0, wxEXPAND | wxLEFT);
+
 
 	topPanel->SetSizer(topSizer);
 
@@ -45,6 +50,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	loadButton->Bind(wxEVT_BUTTON, &MainFrame::OnLoad, this);
 	playButton->Bind(wxEVT_BUTTON, &MainFrame::OnPlay, this);
 	stopButton->Bind(wxEVT_BUTTON, &MainFrame::OnStop, this);
+	plusButton->Bind(wxEVT_BUTTON, &MainFrame::OnTempoPlus, this);
+	minusButton->Bind(wxEVT_BUTTON, &MainFrame::OnTempoMinus, this);
 }
 
 void MainFrame::RefreshComPorts() {
@@ -103,5 +110,17 @@ void MainFrame::OnPlay(wxCommandEvent& event) {
 void MainFrame::OnStop(wxCommandEvent& event) {
 	if (drawPanel->gamepad.IsConnected()) {
 		drawPanel->gamepad.StopMidi();
+	}
+}
+
+void MainFrame::OnTempoPlus(wxCommandEvent& event) {
+	if (drawPanel->gamepad.midiPlaying) {
+		drawPanel->gamepad.midi.TempoUp();
+	}
+}
+
+void MainFrame::OnTempoMinus(wxCommandEvent& event) {
+	if (drawPanel->gamepad.midiPlaying) {
+		drawPanel->gamepad.midi.TempoDown();
 	}
 }

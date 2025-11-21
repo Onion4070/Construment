@@ -17,6 +17,8 @@ private:
 	void OnPlay(wxCommandEvent& event);
 	void OnStop(wxCommandEvent& event);
 	void RefreshComPorts();
+	void OnTempoPlus(wxCommandEvent& event);
+	void OnTempoMinus(wxCommandEvent& event);
 
 	DrawPanel* drawPanel;
 	wxChoice* comChoice;
@@ -25,6 +27,8 @@ private:
 	wxButton* playButton;
 	wxButton* stopButton;
 	wxButton* refreshButton;
+	wxButton* plusButton;
+	wxButton* minusButton;
 
 	wxDECLARE_EVENT_TABLE();
 };

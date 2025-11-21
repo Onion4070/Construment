@@ -17,7 +17,7 @@ bool MIDIPlayer::load(const std::string& path) {
     if (tracks < 1) return false;
 
     for (int t = 0; t < tracks; t++) {
-        if (t > 1) break;  // トラック0,1 以外無視
+        if (t > 4) break;  // トラック0,1 以外無視
 
         for (int i = 0; i < file[t].size(); i++) {
             MidiEvent& ev = file[t][i];
@@ -44,7 +44,7 @@ bool MIDIPlayer::load(const std::string& path) {
     return true;
 }
 
-ActiveNotes MIDIPlayer::update(double dt_sec) {
+ActiveNotes MIDIPlayer::update() {
     curTime += dt_sec;
 
     while (index < events.size() && events[index].time_sec <= curTime) {
@@ -62,6 +62,16 @@ ActiveNotes MIDIPlayer::update(double dt_sec) {
 	if (index == events.size()) end = true;
 
     return { left_current, right_current };
+}
+
+void MIDIPlayer::TempoUp() {
+    dt_sec += 0.004;
+	dt_sec = std::min(dt_sec, 0.1);
+}
+
+void MIDIPlayer::TempoDown() {
+    dt_sec -= 0.004;
+	dt_sec = std::max(dt_sec, 0.004);
 }
 
 void MIDIPlayer::reset() {
