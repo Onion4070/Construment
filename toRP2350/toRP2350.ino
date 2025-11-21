@@ -34,7 +34,7 @@ Adafruit_USBH_Host USBHost;
 // }
 namespace Scale {
   enum Note : int8_t {
-                                       Gs2, A2, As2, B2,
+    C2, Cs2, D2, Ds2, E2, F2, Fs2, G2, Gs2, A2, As2, B2,
     C3, Cs3, D3, Ds3, E3, F3, Fs3, G3, Gs3, A3, As3, B3,
     C4, Cs4, D4, Ds4, E4, F4, Fs4, G4, Gs4, A4, As4, B4,
     C5, Cs5, D5, Ds5, E5, F5, Fs5, G5, Gs5, A5, As5, B5,
@@ -50,7 +50,7 @@ namespace Scale {
   const int lo_0 = 0x00;
   // enum と同じ半音順で並んでいます。
   static const CodePair codes[COUNT] = {
-                                                                                                            {hi_0,0x2d}, {hi_0,0x30}, {hi_0,0x33}, {hi_0,0x35},
+    {hi_0,0x18}, {hi_0,0x3b}, {hi_0,0x1d}, {hi_0,0x1f}, {hi_0,0x22}, {hi_0,0x25}, {hi_0,0x28}, {hi_0,0x2a}, {hi_0,0x2d}, {hi_0,0x30}, {hi_0,0x33}, {hi_0,0x35},
     {hi_0,0x38}, {hi_0,0x3b}, {hi_0,0x3d}, {hi_0,0x3f}, {hi_0,0x42}, {hi_0,0x45}, {hi_0,0x48}, {hi_0,0x4a}, {hi_0,0x4d}, {hi_0,0x50}, {hi_0,0x52}, {hi_0,0x55},
     {hi_0,0x58}, {hi_0,0x5a}, {hi_0,0x5d}, {hi_0,0x60}, {hi_0,0x62}, {hi_0,0x65}, {hi_0,0x68}, {hi_0,0x6a}, {hi_0,0x6d}, {hi_0,0x70}, {hi_0,0x72}, {hi_0,0x75},
     {hi_0,0x78}, {hi_0,0x7a}, {hi_0,0x7d}, {0x7c,lo_0}, {0x88,lo_0}, {0x94,lo_0}, {0x9c,lo_0}, {0xa8,lo_0}, {0xb4,lo_0}, {0xbc,lo_0}, {0xc8,lo_0}, {0xd4,lo_0},
