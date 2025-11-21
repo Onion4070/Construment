@@ -3,6 +3,7 @@
 #include "Options.h"
 #include <vector>
 #include <functional>
+class DrawPanel;
 
 struct ActiveNotes {
     int left = -1;   // 鳴らすMIDIノート番号（-1 なら無音）
@@ -13,11 +14,15 @@ class MIDIPlayer {
 public:
     bool load(const std::string& path);
 
+    void SetDrawPanel(DrawPanel* panel) { drawPanel = panel; }
+
     ActiveNotes update();
     void reset();
     bool EndPlaying() { return end; };
     void TempoUp();
     void TempoDown();
+
+    double GetDt() const { return dt_sec; }
 
 private:
     struct Event {
@@ -35,4 +40,6 @@ private:
 	int right_current = -1;
     bool end = false;
     double dt_sec = 0.008; // 8ms
+
+    DrawPanel* drawPanel = nullptr;
 };

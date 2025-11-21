@@ -11,6 +11,7 @@ class DrawPanel : public wxPanel
 {
 public:
 	DrawPanel(wxWindow* parent);
+	void DrawTempo(double dt);
 	GamePad gamepad;
 
 	// 色設定: 左ノート, 右ノート, 両方（左右同じノート）の色を外から設定できるようにする
@@ -46,6 +47,8 @@ private:
 	// which side to update
 	bool mod_n = false; // update left when true
 	bool mod_m = false; // update right when true
+
+	double tempo_dt = 0.0;
 
 	// per-note vertical positions used for drawing; initialized in constructor
 	const int noteHeight[Scale::COUNT] = {

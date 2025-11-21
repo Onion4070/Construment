@@ -2,6 +2,7 @@
 #include "MIDIPlayer.h"
 #include "Scale.h"
 #include <cctype>
+#include <iostream>
 
 // イベントテーブル定義
 wxBEGIN_EVENT_TABLE(DrawPanel, wxPanel)
@@ -42,6 +43,11 @@ DrawPanel::DrawPanel(wxWindow* parent)
 	leftNoteColor = *wxGREEN;
 	rightNoteColor = *wxRED;
 	bothNoteColor = wxColour(0, 0, 0);
+}
+
+void DrawPanel::DrawTempo(double dt) {
+	tempo_dt = dt;
+	Refresh();
 }
 
 // 色セッター実装
@@ -294,6 +300,20 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 
 	gdc.DrawBitmap(svgBitmapTreble, 50, 98, true); // ト音記号
 	gdc.DrawBitmap(svgBitmapBass, 50, 450, true);  // ヘ音記号
+
+	// テキスト描画
+	wxFont font(75, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
+	gdc.SetFont(font);
+
+	wxFont tempoFont(14, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
+	gdc.SetFont(tempoFont);
+	wxString tempoStr = wxString::Format("tmp: %d", (int)(tempo_dt / 0.004));
+	int tw, th;
+	gdc.GetTextExtent(tempoStr, &tw, &th);
+	int tx = GetSize().GetWidth() - tw - 10;
+	int ty = 8;
+	gdc.DrawText(tempoStr, tx, ty);
+	gdc.SetFont(font);
 
 	auto gamepad_state = gamepad.GetGamePad();
 	if (!gamepad.IsConnected()) return;

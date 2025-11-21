@@ -14,6 +14,9 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	// 描画用パネル
 	drawPanel = new DrawPanel(this);
+	drawPanel->gamepad.midi.SetDrawPanel(drawPanel);
+	// draw initial tempo once at startup
+	drawPanel->DrawTempo(drawPanel->gamepad.midi.GetDt());
 
 	wxPanel* topPanel = new wxPanel(this);
 	wxBoxSizer* topSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -114,13 +117,13 @@ void MainFrame::OnStop(wxCommandEvent& event) {
 }
 
 void MainFrame::OnTempoPlus(wxCommandEvent& event) {
-	if (drawPanel->gamepad.midiPlaying) {
+	// if (drawPanel->gamepad.midiPlaying) {
 		drawPanel->gamepad.midi.TempoUp();
-	}
+	// }
 }
 
 void MainFrame::OnTempoMinus(wxCommandEvent& event) {
-	if (drawPanel->gamepad.midiPlaying) {
+	// if (drawPanel->gamepad.midiPlaying) {
 		drawPanel->gamepad.midi.TempoDown();
-	}
+	// }
 }

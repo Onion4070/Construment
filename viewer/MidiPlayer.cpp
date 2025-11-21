@@ -1,5 +1,6 @@
 ﻿#include "MIDIPlayer.h"
 #include <algorithm>
+#include "DrawPanel.h"
 using namespace smf;
 
 bool MIDIPlayer::load(const std::string& path) {
@@ -61,17 +62,23 @@ ActiveNotes MIDIPlayer::update() {
     }
 	if (index == events.size()) end = true;
 
+    if (drawPanel) {
+        drawPanel->DrawTempo(dt_sec);
+    }
+
     return { left_current, right_current };
 }
 
 void MIDIPlayer::TempoUp() {
     dt_sec += 0.004;
 	dt_sec = std::min(dt_sec, 0.1);
+    if (drawPanel) drawPanel->DrawTempo(dt_sec);
 }
 
 void MIDIPlayer::TempoDown() {
     dt_sec -= 0.004;
 	dt_sec = std::max(dt_sec, 0.004);
+    if (drawPanel) drawPanel->DrawTempo(dt_sec);
 }
 
 void MIDIPlayer::reset() {
