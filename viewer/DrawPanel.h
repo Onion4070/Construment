@@ -13,6 +13,9 @@ public:
 	DrawPanel(wxWindow* parent);
 	GamePad gamepad;
 
+	// 色設定: 左ノート, 右ノート, 両方（左右同じノート）の色を外から設定できるようにする
+	void SetNoteColors(const wxColour& left, const wxColour& right, const wxColour& both);
+
 	// KeyDown/KeyUp を使って modifier の押下状態を管理
 	void OnKeyDown(wxKeyEvent& event);
 	void OnKeyUp(wxKeyEvent& event);
@@ -28,6 +31,11 @@ private:
 	wxBitmap svgBitmapTreble; // SVG画像を保持するビットマップ
 	wxBitmap svgBitmapBass;
 	wxTimer refresh_timer; // タイマー
+
+	// ノート描画で使う色 (左, 右, 両方)
+	wxColour leftNoteColor;
+	wxColour rightNoteColor;
+	wxColour bothNoteColor;
 
 	// modifier 状態
 	bool mod_h = false; // octave down
