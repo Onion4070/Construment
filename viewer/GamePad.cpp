@@ -217,16 +217,20 @@ std::vector<std::pair<NoteInfo, NoteInfo>> GamePad::GetInputStream() {
 		target_pair = std::make_pair(linfo, rinfo);
 	}
 
-	bool both_silence = (target_pair.first.note == Scale::Silence) && (target_pair.second.note == Scale::Silence);
-	if (both_silence) {
-		last_playing_pair = target_pair;
-	} else {
-		bool changed = (target_pair.first.note != last_playing_pair.first.note) || (target_pair.second.note != last_playing_pair.second.note);
-		if (changed) {
-			input_stream.push_back(target_pair);
-			last_playing_pair = target_pair;
-		}
+	std::pair<NoteInfo, NoteInfo> push_pair = target_pair;
+
+	if (push_pair.first.note == last_playing_pair.first.note) {
+		push_pair.first.note = Scale::Silence;
 	}
+	if (push_pair.second.note == last_playing_pair.second.note) {
+		push_pair.second.note = Scale::Silence;
+	}
+
+	bool both_silence = (push_pair.first.note == Scale::Silence) && (push_pair.second.note == Scale::Silence);
+	if (!both_silence) {
+		input_stream.push_back(push_pair);
+	}
+	last_playing_pair = target_pair;
 
 	if (input_stream.size() > 12) {
 		input_stream.erase(input_stream.begin(), input_stream.begin() + (input_stream.size() - 12));
