@@ -2,7 +2,6 @@
 #include "MIDIPlayer.h"
 #include "Scale.h"
 #include <cctype>
-#include <iostream>
 
 // イベントテーブル定義
 wxBEGIN_EVENT_TABLE(DrawPanel, wxPanel)
@@ -194,7 +193,7 @@ void DrawPanel::Draw(wxGCDC* gdc, const std::vector<std::pair<NoteInfo, NoteInfo
 	auto isSharp = [](Scale::Note n) -> bool {
 		using Scale::Note;
 		switch (n) {
-															case Note::Gs2: case Note::As2:
+			case Note::Cs2: case Note::Ds2: case Note::Fs2: case Note::Gs2: case Note::As2:
 			case Note::Cs3: case Note::Ds3: case Note::Fs3: case Note::Gs3: case Note::As3:
 			case Note::Cs4: case Note::Ds4: case Note::Fs4: case Note::Gs4: case Note::As4:
 			case Note::Cs5: case Note::Ds5: case Note::Fs5: case Note::Gs5: case Note::As5:
