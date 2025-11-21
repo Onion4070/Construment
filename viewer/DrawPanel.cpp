@@ -37,14 +37,6 @@ DrawPanel::DrawPanel(wxWindow* parent)
 
 	// パネルがキー入力を受け取れるようにフォーカスを要求
 	this->SetFocus();
-
-	gamepad.SetDefaultNoteCallback([this](Scale::Note l, Scale::Note r) {
-		this->CallAfter([this, l, r]() {
-			current_left = l;
-			current_right = r;
-			this->Refresh();
-		});
-	});
 }
 
 // キー押下イベントハンドラ
@@ -63,10 +55,21 @@ void DrawPanel::OnKeyDown(wxKeyEvent& event) {
 
 	// Silence: update left/right depending on modifiers
 	if (key == 'S') {
-		if (mod_n) current_left = Scale::Silence;
-		if (mod_m) current_right = Scale::Silence;
-		if (!mod_n && !mod_m) { current_left = Scale::Silence; current_right = Scale::Silence; }
-		if (gamepad.IsConnected()) gamepad.SendDefaultNote(current_left, current_right);
+		std::pair<Scale::Note, Scale::Note> tmp;
+		{
+			std::lock_guard<std::mutex> lock(defaultNotesMutex);
+			tmp = defaultNotes;
+		}
+		if (mod_n) tmp.first = Scale::Silence;
+		if (mod_m) tmp.second = Scale::Silence;
+		if (!mod_n && !mod_m) { tmp.first = Scale::Silence; tmp.second = Scale::Silence; }
+		if (gamepad.IsConnected()) {
+			gamepad.SendDefaultNote(tmp.first, tmp.second);
+		} else {
+			std::lock_guard<std::mutex> lock(defaultNotesMutex);
+			defaultNotes = tmp;
+		}
+		// this->Refresh();
 		event.Skip();
 		return;
 	}
@@ -85,7 +88,7 @@ void DrawPanel::OnKeyDown(wxKeyEvent& event) {
 		default: isNote = false; break;
 	}
 
-	if (isNote && gamepad.IsConnected()) {
+	if (isNote) {
 		int semitoneOffset = 0;
 		if (mod_h) semitoneOffset += -12;
 		if (mod_j) semitoneOffset += -1;
@@ -93,11 +96,21 @@ void DrawPanel::OnKeyDown(wxKeyEvent& event) {
 		if (mod_l) semitoneOffset += +12;
 
 		Scale::Note target = Scale::transpose(base, semitoneOffset);
-		if (mod_n) current_left = target;
-		if (mod_m) current_right = target;
-		if (!mod_n && !mod_m) { current_left = target; current_right = target; }
-
-		gamepad.SendDefaultNote(current_left, current_right);
+		std::pair<Scale::Note, Scale::Note> tmp;
+		{
+			std::lock_guard<std::mutex> lock(defaultNotesMutex);
+			tmp = defaultNotes;
+		}
+		if (mod_n) tmp.first = target;
+		if (mod_m) tmp.second = target;
+		if (!mod_n && !mod_m) { tmp.first = target; tmp.second = target; }
+		if (gamepad.IsConnected()) {
+			gamepad.SendDefaultNote(tmp.first, tmp.second);
+		} else {
+			std::lock_guard<std::mutex> lock(defaultNotesMutex);
+			defaultNotes = tmp;
+		}
+		// this->Refresh();
 	}
 
 	event.Skip();
@@ -271,6 +284,6 @@ void DrawPanel::OnPaint(wxPaintEvent& event) {
 	auto gamepad_state = gamepad.GetGamePad();
 	if (!gamepad.IsConnected()) return;
 	gamepad.Update();
-	auto buf = gamepad.GetInputStream(current_left, current_right);
+	auto buf = gamepad.GetInputStream();
 	Draw(&gdc, buf);
 }

@@ -150,19 +150,19 @@ std::array<uint8_t, 3> GamePad::DetectButtonReleased() {
 	return diff;
 }
 
-// Accept default notes from the caller (DrawPanel) so the defaults are shared
-std::vector<std::pair<NoteInfo, NoteInfo>> GamePad::GetInputStream(Scale::Note &default_left, Scale::Note &default_right) {
-	auto diff = DetectButtonPressed();
-	auto releaseDiff = DetectButtonReleased();
+std::vector<std::pair<NoteInfo, NoteInfo>> GamePad::GetInputStream() {
+	// auto diff = DetectButtonPressed();
+	// auto releaseDiff = DetectButtonReleased();
 
-	if (diff[1] & SwitchPro::Buttons1::L3) {
+	if (curr[1] & SwitchPro::Buttons1::L3) {
 		input_stream.clear();
+		SendDefaultNote(Scale::Silence, Scale::Silence);
 		return input_stream;
 	}
 	// If R3 is currently held, set the shared defaults to Silence (matches device behavior)
 	if (curr[1] & SwitchPro::Buttons1::R3) {
-		default_left = Scale::Silence;
-		default_right = Scale::Silence;
+		std::lock_guard<std::mutex> lock(defaultNotesMutex);
+		defaultNotes = { Scale::Silence, Scale::Silence };
 	}
 
 	int semitone_offset = 0;
@@ -201,12 +201,19 @@ std::vector<std::pair<NoteInfo, NoteInfo>> GamePad::GetInputStream(Scale::Note &
 		}
 	}
 
+	Scale::Note def_left, def_right;
+	{
+		std::lock_guard<std::mutex> lock(defaultNotesMutex);
+		def_left = defaultNotes.first;
+		def_right = defaultNotes.second;
+	}
+
 	std::pair<NoteInfo, NoteInfo> target_pair;
 	if (note_selected) {
 		target_pair = std::make_pair(selectedInfo, selectedInfo);
 	} else {
-		NoteInfo linfo{ default_left, "", "" };
-		NoteInfo rinfo{ default_right, "", "" };
+		NoteInfo linfo{ def_left, "", "" };
+		NoteInfo rinfo{ def_right, "", "" };
 		target_pair = std::make_pair(linfo, rinfo);
 	}
 
@@ -251,11 +258,9 @@ void GamePad::SendDefaultNote(Scale::Note note_l, Scale::Note note_r) {
 		asio::write(serial, asio::buffer(packet, sizeof(packet)));
 		std::cout << "Sent SendDefaultNote packet: " << std::hex << (int)packet[2] << " " << (int)packet[3] << " " << (int)packet[4] << std::dec << std::endl;
 
-		try {
-			if (defaultNoteCallback) defaultNoteCallback(note_l, note_r);
-		}
-		catch (const std::exception& cb_e) {
-			std::cout << "DefaultNote callback threw: " << cb_e.what() << std::endl;
+		{
+			std::lock_guard<std::mutex> lock(defaultNotesMutex);
+			defaultNotes = { note_l, note_r };
 		}
 	}
 	catch (const std::exception& e) {

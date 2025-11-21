@@ -20,7 +20,7 @@ public:
 	~GamePad();
 	std::array<uint8_t, 3> GetGamePad();
 	void Update();
-	std::vector<std::pair<NoteInfo, NoteInfo>> GetInputStream(Scale::Note &default_left, Scale::Note &default_right);
+	std::vector<std::pair<NoteInfo, NoteInfo>> GetInputStream();
 	std::array<uint8_t, 3> DetectButtonPressed();
 	std::array<uint8_t, 3> DetectButtonReleased();
 
@@ -38,8 +38,6 @@ public:
 	void SendNotes(const ActiveNotes& notes);
 	MIDIPlayer midi;
 	bool midiPlaying = false;
-
-	void SetDefaultNoteCallback(std::function<void(Scale::Note, Scale::Note)> cb) { defaultNoteCallback = std::move(cb); }
 
 private:
 	Scale::Note MidiToScale(int midi_note);
@@ -62,8 +60,5 @@ private:
 	std::array<uint8_t, 3> prev = {0,0,0};
 	std::array<uint8_t, 3> curr = {0,0,0};
 	std::pair<NoteInfo, NoteInfo> last_playing_pair = { {Scale::Silence, "", ""}, {Scale::Silence, "", ""} };
-
-	std::function<void(Scale::Note, Scale::Note)> defaultNoteCallback;
-
 };
 
